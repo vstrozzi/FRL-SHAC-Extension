@@ -24,7 +24,7 @@ class DFlexEnv:
         self.seed = seed
 
         self.no_grad = no_grad
-        df.config.no_grad = self.no_grad
+        df.no_grad = self.no_grad
 
         self.episode_length = episode_length
 
