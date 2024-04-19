@@ -4,8 +4,11 @@ Version: 0.0.1
 Summary: Differentiable Multiphysics for Python
 Author: NVIDIA
 Author-email: mmacklin@nvidia.com
+License: UNKNOWN
+Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: Operating System :: OS Independent
 Description-Content-Type: text/markdown
-Requires-Dist: ninja
-Requires-Dist: torch
+
+UNKNOWN
+
