@@ -1,6 +1,6 @@
-pyyaml
-tensorboard
-tensorboardx
-urdfpy
-usd-core
+pyyamll==6.0
+tensorboard==2.8.0
+tensorboardx==2.5
+urdfpy==0.0.22
+usd-core==22.3
 
