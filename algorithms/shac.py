@@ -52,7 +52,7 @@ class SHAC:
 
         self.num_envs = self.env.num_envs
         self.num_obs = self.env.num_obs
-        self.num_actions = self.env.num_actions
+        self.num_actions = self.env.num_actionstensor
         self.max_episode_length = self.env.episode_length
         self.device = cfg["params"]["general"]["device"]
 
@@ -217,8 +217,6 @@ class SHAC:
                     self.ret_rms.update(self.ret)
                     
                 rew = rew / torch.sqrt(ret_var + 1e-6)
-            
-            print(self.episode_length.get_device())
 
             self.episode_length += 1
         
@@ -307,7 +305,7 @@ class SHAC:
         episode_loss_his = []
         episode_discounted_loss_his = []
         episode_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
-        episode_length = torch.zeros(self.num_envs, dtype = int)
+        episode_length = torch.zeros(self.num_envs, dtype = int, device = self.device)
         episode_gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         episode_discounted_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
 
@@ -397,7 +395,7 @@ class SHAC:
         self.initialize_env()
         self.episode_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         self.episode_discounted_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
-        self.episode_length = torch.zeros(self.num_envs, dtype = int)
+        self.episode_length = torch.zeros(self.num_envs, dtype = int, device = self.device)
         self.episode_gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         
         def actor_closure():
