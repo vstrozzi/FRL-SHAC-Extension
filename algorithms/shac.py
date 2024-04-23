@@ -52,7 +52,7 @@ class SHAC:
 
         self.num_envs = self.env.num_envs
         self.num_obs = self.env.num_obs
-        self.num_actions = self.env.num_actionstensor
+        self.num_actions = self.env.num_actions
         self.max_episode_length = self.env.episode_length
         self.device = cfg["params"]["general"]["device"]
 
