@@ -217,6 +217,8 @@ class SHAC:
                     self.ret_rms.update(self.ret)
                     
                 rew = rew / torch.sqrt(ret_var + 1e-6)
+            
+            print(self.episode_length.get_device())
 
             self.episode_length += 1
         
