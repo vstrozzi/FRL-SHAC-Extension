@@ -1858,7 +1858,7 @@ def compile():
         ld_flags = ["-DNDEBUG"]
 
     # just use minimum to ensure compatability
-    cuda_flags = ['-gencode=arch=compute_35,code=compute_35']
+    cuda_flags = ['-gencode=arch=compute_61,code=compute_61']
 
     # release config
     if use_cuda:
