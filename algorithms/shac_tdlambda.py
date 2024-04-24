@@ -258,13 +258,13 @@ class SHAC:
             #rew_acc[i + 1, done_env_ids] = 0.
 
             # collect data for critic training
-            with torch.no_grad():
-                self.rew_buf[i] = rew.clone()
-                if i < self.steps_num - 1:
-                    self.done_mask[i] = done.clone().to(torch.float32)
-                else:
-                    self.done_mask[i, :] = 1.
-                self.next_values[i] = next_values[i + 1].clone()
+            #with torch.no_grad():
+            self.rew_buf[i] = rew.clone()
+            if i < self.steps_num - 1:
+                self.done_mask[i] = done.clone().to(torch.float32)
+            else:
+                self.done_mask[i, :] = 1.
+            self.next_values[i] = next_values[i + 1].clone()
 
             # collect episode loss
             with torch.no_grad():
