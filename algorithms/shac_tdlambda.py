@@ -355,7 +355,7 @@ class SHAC:
  
         return mean_policy_loss, mean_policy_discounted_loss, mean_episode_length
 
-    @torch.no_grad()
+    #@torch.no_grad()
     def compute_target_values(self):
         if self.critic_method == 'one-step':
             self.target_values = self.rew_buf + self.gamma * self.next_values
