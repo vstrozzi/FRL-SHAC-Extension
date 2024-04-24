@@ -461,7 +461,7 @@ class SHAC:
             # prepare dataset
             self.time_report.start_timer("prepare critic dataset")
             with torch.no_grad():
-                #self.compute_target_values()  # no need, as we call this in compute_actor_loss already
+                self.compute_target_values()  # no need, as we call this in compute_actor_loss already
                 dataset = CriticDataset(self.batch_size, self.obs_buf, self.target_values, drop_last = False)
             self.time_report.end_timer("prepare critic dataset")
 
