@@ -167,8 +167,8 @@ class SHAC:
         self.time_report = TimeReport()
         
     def compute_actor_loss(self, deterministic = False):
-        rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
-        gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
+        #rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
+        #gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         next_values = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         
         actor_loss = torch.tensor(0., dtype = torch.float32, device = self.device)
@@ -242,20 +242,20 @@ class SHAC:
                 print('next value error')
                 raise ValueError
             
-            rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
-
-            if i < self.steps_num - 1:
-                actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
-            else:
-                # terminate all envs at the end of optimization iteration
-                actor_loss = actor_loss + (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
-        
+            #rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
+            #
+            #if i < self.steps_num - 1:
+            #    actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
+            #else:
+            #    # terminate all envs at the end of optimization iteration
+            #    actor_loss = actor_loss + (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
+            #
             # compute gamma for next step
-            gamma = gamma * self.gamma
+            #gamma = gamma * self.gamma
 
             # clear up gamma and rew_acc for done envs
-            gamma[done_env_ids] = 1.
-            rew_acc[i + 1, done_env_ids] = 0.
+            #gamma[done_env_ids] = 1.
+            #rew_acc[i + 1, done_env_ids] = 0.
 
             # collect data for critic training
             with torch.no_grad():
@@ -287,7 +287,7 @@ class SHAC:
                         self.episode_discounted_loss[done_env_id] = 0.
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
-        
+
         ##########
         self.compute_target_values()
         # self.target_values  # (step, env)
@@ -461,7 +461,7 @@ class SHAC:
             # prepare dataset
             self.time_report.start_timer("prepare critic dataset")
             with torch.no_grad():
-                self.compute_target_values()
+                #self.compute_target_values()  # no need, as we call this in compute_actor_loss already
                 dataset = CriticDataset(self.batch_size, self.obs_buf, self.target_values, drop_last = False)
             self.time_report.end_timer("prepare critic dataset")
 
