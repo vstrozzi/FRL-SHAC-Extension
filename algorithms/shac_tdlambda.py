@@ -250,10 +250,10 @@ class SHAC:
             #    # terminate all envs at the end of optimization iteration
             #    actor_loss = actor_loss + (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
             #
-            # compute gamma for next step
+            ## compute gamma for next step
             #gamma = gamma * self.gamma
-
-            # clear up gamma and rew_acc for done envs
+            #
+            ## clear up gamma and rew_acc for done envs
             #gamma[done_env_ids] = 1.
             #rew_acc[i + 1, done_env_ids] = 0.
 
@@ -315,7 +315,7 @@ class SHAC:
         episode_loss_his = []
         episode_discounted_loss_his = []
         episode_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
-        episode_length = torch.zeros(self.num_envs, dtype = int)
+        episode_length = torch.zeros(self.num_envs, dtype = int, device = self.device)
         episode_gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         episode_discounted_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
 
@@ -405,7 +405,7 @@ class SHAC:
         self.initialize_env()
         self.episode_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         self.episode_discounted_loss = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
-        self.episode_length = torch.zeros(self.num_envs, dtype = int)
+        self.episode_length = torch.zeros(self.num_envs, dtype = int, device = self.device)
         self.episode_gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         
         def actor_closure():
