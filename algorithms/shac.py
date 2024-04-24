@@ -287,16 +287,6 @@ class SHAC:
                         self.episode_discounted_loss[done_env_id] = 0.
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
-        
-        ##########
-        self.compute_target_values()
-        # self.target_values  # (step, env)
-        for env_id in range(self.num_envs):
-            actor_loss += self.target_values[0, env_id]
-            for i in range(self.steps_num - 1):
-                if self.done_mask[i, env_id]:  # (step, env)
-                    actor_loss += self.target_values[i + 1, env_id]
-        ##########
 
         actor_loss /= self.steps_num * self.num_envs
 
