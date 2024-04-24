@@ -168,6 +168,7 @@ class SHAC:
         
     def compute_actor_loss(self, deterministic = False):
         #rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
+        rews = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
         #gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         next_values = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         
@@ -242,6 +243,7 @@ class SHAC:
                 print('next value error')
                 raise ValueError
             
+            rews[i] = rew
             #rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
             #
             #if i < self.steps_num - 1:
@@ -258,15 +260,13 @@ class SHAC:
             #rew_acc[i + 1, done_env_ids] = 0.
 
             # collect data for critic training
-            self.rew_buf[i] = rew.clone()
             with torch.no_grad():
-                #self.rew_buf[i] = rew.clone()
+                self.rew_buf[i] = rew.clone()
                 if i < self.steps_num - 1:
                     self.done_mask[i] = done.clone().to(torch.float32)
                 else:
                     self.done_mask[i, :] = 1.
-                #self.next_values[i] = next_values[i + 1].clone()
-            self.next_values[i] = next_values[i + 1].clone()
+                self.next_values[i] = next_values[i + 1].clone()
 
             # collect episode loss
             with torch.no_grad():
@@ -297,8 +297,8 @@ class SHAC:
         td_lambda = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
         for i in reversed(range(self.steps_num)):
             lam = lam * self.lam * (1. - self.done_mask[i]) + self.done_mask[i]
-            Ai = (1.0 - self.done_mask[i]) * (self.lam * self.gamma * Ai + self.gamma * self.next_values[i] + (1. - lam) / (1. - self.lam) * self.rew_buf[i])
-            Bi = self.gamma * (self.next_values[i] * self.done_mask[i] + Bi * (1.0 - self.done_mask[i])) + self.rew_buf[i]
+            Ai = (1.0 - self.done_mask[i]) * (self.lam * self.gamma * Ai + self.gamma * next_values[i + 1] + (1. - lam) / (1. - self.lam) * rews[i])
+            Bi = self.gamma * (next_values[i + 1] * self.done_mask[i] + Bi * (1.0 - self.done_mask[i])) + rews[i]
             td_lambda[i] = (1.0 - self.lam) * Ai + lam * Bi
         for env_id in range(self.num_envs):
             actor_loss += td_lambda[0, env_id]
