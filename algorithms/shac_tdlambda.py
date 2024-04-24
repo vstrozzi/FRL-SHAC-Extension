@@ -258,12 +258,14 @@ class SHAC:
             #rew_acc[i + 1, done_env_ids] = 0.
 
             # collect data for critic training
-            #with torch.no_grad():
             self.rew_buf[i] = rew.clone()
-            if i < self.steps_num - 1:
-                self.done_mask[i] = done.clone().to(torch.float32)
-            else:
-                self.done_mask[i, :] = 1.
+            with torch.no_grad():
+                #self.rew_buf[i] = rew.clone()
+                if i < self.steps_num - 1:
+                    self.done_mask[i] = done.clone().to(torch.float32)
+                else:
+                    self.done_mask[i, :] = 1.
+                #self.next_values[i] = next_values[i + 1].clone()
             self.next_values[i] = next_values[i + 1].clone()
 
             # collect episode loss
@@ -289,13 +291,20 @@ class SHAC:
                         self.episode_gamma[done_env_id] = 1.
 
         ##########
-        self.compute_target_values()
-        # self.target_values  # (step, env)
+        Ai = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
+        Bi = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
+        lam = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
+        td_lambda = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
+        for i in reversed(range(self.steps_num)):
+            lam = lam * self.lam * (1. - self.done_mask[i]) + self.done_mask[i]
+            Ai = (1.0 - self.done_mask[i]) * (self.lam * self.gamma * Ai + self.gamma * self.next_values[i] + (1. - lam) / (1. - self.lam) * self.rew_buf[i])
+            Bi = self.gamma * (self.next_values[i] * self.done_mask[i] + Bi * (1.0 - self.done_mask[i])) + self.rew_buf[i]
+            td_lambda[i] = (1.0 - self.lam) * Ai + lam * Bi
         for env_id in range(self.num_envs):
-            actor_loss += self.target_values[0, env_id]
+            actor_loss += td_lambda[0, env_id]
             for i in range(self.steps_num - 1):
-                if self.done_mask[i, env_id]:  # (step, env)
-                    actor_loss += self.target_values[i + 1, env_id]
+                if self.done_mask[i, env_id]:
+                    actor_loss += td_lambda[i + 1, env_id]
         ##########
 
         actor_loss /= self.steps_num * self.num_envs
@@ -355,7 +364,7 @@ class SHAC:
  
         return mean_policy_loss, mean_policy_discounted_loss, mean_episode_length
 
-    #@torch.no_grad()
+    @torch.no_grad()
     def compute_target_values(self):
         if self.critic_method == 'one-step':
             self.target_values = self.rew_buf + self.gamma * self.next_values
@@ -461,7 +470,7 @@ class SHAC:
             # prepare dataset
             self.time_report.start_timer("prepare critic dataset")
             with torch.no_grad():
-                self.compute_target_values()  # no need, as we call this in compute_actor_loss already
+                self.compute_target_values()
                 dataset = CriticDataset(self.batch_size, self.obs_buf, self.target_values, drop_last = False)
             self.time_report.end_timer("prepare critic dataset")
 
