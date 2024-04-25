@@ -18,7 +18,7 @@ params:
 
   config:
     name: df_ant_shac
-    actor_learning_rate: 1e-2 # adam
+    actor_learning_rate: 2e-3 # adam
     critic_learning_rate: 2e-3 # adam
     lr_schedule: linear # ['constant', 'linear']
     target_critic_alpha: 0.2

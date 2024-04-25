@@ -452,6 +452,7 @@ class SHAC:
             # learning rate schedule
             if self.lr_schedule == 'linear':
                 actor_lr = (1e-5 - self.actor_lr) * float(epoch / self.max_epochs) + self.actor_lr
+                actor_lr /= 10  # added
                 for param_group in self.actor_optimizer.param_groups:
                     param_group['lr'] = actor_lr
                 lr = actor_lr
