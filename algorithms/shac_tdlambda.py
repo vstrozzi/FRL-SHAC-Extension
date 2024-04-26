@@ -309,7 +309,7 @@ class SHAC:
                 if self.done_mask[i, env_id]:
                     actor_loss_2 += td_lambda[i + 1, env_id]
 
-        actor_loss = 0.65 * actor_loss + 0.35 * actor_loss_2
+        actor_loss = 0.35 * actor_loss + 0.65 * actor_loss_2
         ##########
 
         actor_loss /= self.steps_num * self.num_envs
