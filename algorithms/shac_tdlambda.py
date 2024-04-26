@@ -167,8 +167,8 @@ class SHAC:
         self.time_report = TimeReport()
         
     def compute_actor_loss(self, deterministic = False):
-        rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         rews = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
+        rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         next_values = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         
@@ -244,7 +244,6 @@ class SHAC:
                 raise ValueError
             
             rews[i] = rew.clone()
-
             rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
             
             if i < self.steps_num - 1:
@@ -296,6 +295,7 @@ class SHAC:
         Bi = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         lam = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         td_lambda = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
+        actor_loss_2 = torch.tensor(0., dtype = torch.float32, device = self.device)
 
         for i in reversed(range(self.steps_num)):
             lam = lam * self.lam * (1. - self.done_mask[i]) + self.done_mask[i]
@@ -304,10 +304,12 @@ class SHAC:
             td_lambda[i] = (1.0 - self.lam) * Ai + lam * Bi
             
         for env_id in range(self.num_envs):
-            actor_loss += td_lambda[0, env_id]
+            actor_loss_2 += td_lambda[0, env_id]
             for i in range(self.steps_num - 1):
                 if self.done_mask[i, env_id]:
-                    actor_loss += td_lambda[i + 1, env_id]
+                    actor_loss_2 += td_lambda[i + 1, env_id]
+
+        actor_loss = 0.8 * actor_loss + 0.2 * actor_loss_2
         ##########
 
         actor_loss /= self.steps_num * self.num_envs
