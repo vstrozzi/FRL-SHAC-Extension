@@ -243,7 +243,7 @@ class SHAC:
                 print('next value error')
                 raise ValueError
             
-            rews[i] = rew
+            rews[i] = rew.clone()
             #rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
             #
             #if i < self.steps_num - 1:
@@ -295,16 +295,18 @@ class SHAC:
         Bi = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         lam = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         td_lambda = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
+
         for i in reversed(range(self.steps_num)):
             lam = lam * self.lam * (1. - self.done_mask[i]) + self.done_mask[i]
             Ai = (1.0 - self.done_mask[i]) * (self.lam * self.gamma * Ai + self.gamma * next_values[i + 1] + (1. - lam) / (1. - self.lam) * rews[i])
             Bi = self.gamma * (next_values[i + 1] * self.done_mask[i] + Bi * (1.0 - self.done_mask[i])) + rews[i]
             td_lambda[i] = (1.0 - self.lam) * Ai + lam * Bi
+
         for env_id in range(self.num_envs):
             actor_loss += td_lambda[0, env_id]
-            for i in range(self.steps_num - 1):
-                if self.done_mask[i, env_id]:
-                    actor_loss += td_lambda[i + 1, env_id]
+            #for i in range(self.steps_num - 1):
+            #    if self.done_mask[i, env_id]:
+            #        actor_loss += td_lambda[i + 1, env_id]
         ##########
 
         actor_loss /= self.steps_num * self.num_envs
@@ -452,7 +454,6 @@ class SHAC:
             # learning rate schedule
             if self.lr_schedule == 'linear':
                 actor_lr = (1e-5 - self.actor_lr) * float(epoch / self.max_epochs) + self.actor_lr
-                actor_lr /= 10  # added
                 for param_group in self.actor_optimizer.param_groups:
                     param_group['lr'] = actor_lr
                 lr = actor_lr
