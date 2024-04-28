@@ -33,7 +33,7 @@ for i in range(len(seeds)):
     if args.algo == 'shac':
         script_name = 'train_shac.py'
     elif args.algo == 'shac_tdlambda':
-        script_name = 'train_shac_tdlambda'
+        script_name = 'train_shac_tdlambda.py'
     elif args.algo == 'ppo' or args.algo == 'sac':
         script_name = 'train_rl.py'
     elif args.algo == 'bptt':
