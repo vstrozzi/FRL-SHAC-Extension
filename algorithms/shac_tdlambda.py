@@ -295,7 +295,7 @@ class SHAC:
         Bi = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         lam = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         td_lambda = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
-        actor_loss_2 = torch.tensor(0., dtype = torch.float32, device = self.device)
+        td_lambda_loss = torch.tensor(0., dtype = torch.float32, device = self.device)
 
         for i in reversed(range(self.steps_num)):
             lam = lam * self.lam * (1. - self.done_mask[i]) + self.done_mask[i]
@@ -304,13 +304,13 @@ class SHAC:
             td_lambda[i] = (1.0 - self.lam) * Ai + lam * Bi
             
         for env_id in range(self.num_envs):
-            actor_loss_2 += td_lambda[0, env_id]
+            td_lambda_loss += td_lambda[0, env_id]
             for i in range(self.steps_num - 1):
                 if self.done_mask[i, env_id]:
-                    actor_loss_2 += td_lambda[i + 1, env_id]
+                    td_lambda_loss += td_lambda[i + 1, env_id]
 
         alpha = 0.67
-        actor_loss = (alpha * actor_loss + (1 - alpha) * actor_loss_2)
+        actor_loss = (alpha * actor_loss + (1 - alpha) * td_lambda_loss)
         ##########
 
         actor_loss /= self.steps_num * self.num_envs
@@ -403,6 +403,9 @@ class SHAC:
         print_info('mean episode loss = {}, mean discounted loss = {}, mean episode length = {}'.format(mean_policy_loss, mean_policy_discounted_loss, mean_episode_length))
         
     def train(self):
+        rew_step = []
+        rew_time = []
+
         self.start_time = time.time()
 
         # add timers
@@ -534,6 +537,8 @@ class SHAC:
                 self.writer.add_scalar('policy_loss/iter', mean_policy_loss, self.iter_count)
                 self.writer.add_scalar('rewards/step', -mean_policy_loss, self.step_count)
                 self.writer.add_scalar('rewards/time', -mean_policy_loss, time_elapse)
+                rew_step.append((-mean_policy_loss, self.step_count))
+                rew_time.append((-mean_policy_loss, time_elapse))
                 self.writer.add_scalar('rewards/iter', -mean_policy_loss, self.iter_count)
                 self.writer.add_scalar('policy_discounted_loss/step', mean_policy_discounted_loss, self.step_count)
                 self.writer.add_scalar('policy_discounted_loss/iter', mean_policy_discounted_loss, self.iter_count)
@@ -576,8 +581,11 @@ class SHAC:
         np.save(open(os.path.join(self.log_dir, 'episode_discounted_loss_his.npy'), 'wb'), self.episode_discounted_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_length_his.npy'), 'wb'), self.episode_length_his)
 
+        print(rew_step)
+        print(rew_time)
+
         # evaluate the final policy's performance
-        self.run(self.num_envs)
+        #self.run(self.num_envs)
 
         self.close()
     
