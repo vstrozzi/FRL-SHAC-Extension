@@ -329,7 +329,7 @@ class SHAC:
             episode_gamma *= self.gamma
             if len(done_env_ids) > 0:
                 for done_env_id in done_env_ids:
-                    print('loss = {:.2f}, len = {}'.format(episode_loss[done_env_id].item(), episode_length[done_env_id]))
+                    #print('loss = {:.2f}, len = {}'.format(episode_loss[done_env_id].item(), episode_length[done_env_id]))
                     episode_loss_his.append(episode_loss[done_env_id].item())
                     episode_discounted_loss_his.append(episode_discounted_loss[done_env_id].item())
                     episode_length_his.append(episode_length[done_env_id].item())
@@ -482,7 +482,7 @@ class SHAC:
                     batch_cnt += 1
                 
                 self.value_loss = (total_critic_loss / batch_cnt).detach().cpu().item()
-                print('value iter {}/{}, loss = {:7.6f}'.format(j + 1, self.critic_iterations, self.value_loss), end='\r')
+                #print('value iter {}/{}, loss = {:7.6f}'.format(j + 1, self.critic_iterations, self.value_loss), end='\r')
 
             self.time_report.end_timer("critic training")
 
@@ -503,7 +503,7 @@ class SHAC:
                 mean_policy_discounted_loss = self.episode_discounted_loss_meter.get_mean()
 
                 if mean_policy_loss < self.best_policy_loss:
-                    print_info("save best policy with loss {:.2f}".format(mean_policy_loss))
+                    #print_info("save best policy with loss {:.2f}".format(mean_policy_loss))
                     self.save()
                     self.best_policy_loss = mean_policy_loss
                 
@@ -527,8 +527,8 @@ class SHAC:
                 mean_policy_discounted_loss = np.inf
                 mean_episode_length = 0
             
-            print('iter {}: ep loss {:.2f}, ep discounted loss {:.2f}, ep len {:.1f}, fps total {:.2f}, value loss {:.2f}, grad norm before clip {:.2f}, grad norm after clip {:.2f}'.format(\
-                    self.iter_count, mean_policy_loss, mean_policy_discounted_loss, mean_episode_length, self.steps_num * self.num_envs / (time_end_epoch - time_start_epoch), self.value_loss, self.grad_norm_before_clip, self.grad_norm_after_clip))
+            #print('iter {}: ep loss {:.2f}, ep discounted loss {:.2f}, ep len {:.1f}, fps total {:.2f}, value loss {:.2f}, grad norm before clip {:.2f}, grad norm after clip {:.2f}'.format(\
+            #        self.iter_count, mean_policy_loss, mean_policy_discounted_loss, mean_episode_length, self.steps_num * self.num_envs / (time_end_epoch - time_start_epoch), self.value_loss, self.grad_norm_before_clip, self.grad_norm_after_clip))
 
             self.writer.flush()
         
