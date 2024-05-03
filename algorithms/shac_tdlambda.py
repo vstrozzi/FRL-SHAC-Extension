@@ -68,6 +68,7 @@ class SHAC:
         self.critic_lr = float(cfg['params']['config']['critic_learning_rate'])
         self.lr_schedule = cfg['params']['config'].get('lr_schedule', 'linear')
         
+        self.actor_loss_alpha = cfg["params"]["config"]["actor_loss_alpha"]
         self.target_critic_alpha = cfg['params']['config'].get('target_critic_alpha', 0.4)
 
         self.obs_rms = None
@@ -309,7 +310,7 @@ class SHAC:
                 if self.done_mask[i, env_id]:
                     td_lambda_loss += td_lambda[i + 1, env_id]
 
-        alpha = 0.67
+        alpha = self.actor_loss_alpha
         actor_loss = (alpha * actor_loss + (1 - alpha) * td_lambda_loss)
         ##########
 

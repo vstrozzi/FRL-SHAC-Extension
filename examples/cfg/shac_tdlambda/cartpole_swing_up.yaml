@@ -21,6 +21,7 @@ params:
     actor_learning_rate: 1e-2 # adam
     critic_learning_rate: 1e-3 # adam
     lr_schedule: linear # ['constant', 'linear']
+    actor_loss_alpha: 0.67
     target_critic_alpha: 0.2
     obs_rms: True
     ret_rms: False
@@ -30,7 +31,7 @@ params:
     num_batch: 4
     gamma: 0.99
     betas: [0.7, 0.95] # adam
-    max_epochs: 500
+    max_epochs: 10 # 500
     steps_num: 32
     grad_norm: 1.0
     truncate_grads: True

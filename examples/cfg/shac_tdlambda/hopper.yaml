@@ -21,6 +21,7 @@ params:
     actor_learning_rate: 2e-3 # adam
     critic_learning_rate: 2e-4 # adam
     lr_schedule: linear # ['constant', 'linear']
+    actor_loss_alpha: 0.67
     target_critic_alpha: 0.2 
     obs_rms: True
     ret_rms: False
