@@ -6,7 +6,7 @@ params:
     MM_caching_frequency: 48
   
   network:
-    actor: ActorStochasticMLP
+    actor: ActorDeterministicMLP
     actor_mlp:
       units: [256, 128]
       activation: elu
@@ -21,7 +21,7 @@ params:
     actor_learning_rate: 2e-3 # adam
     critic_learning_rate: 5e-4 # adam
     lr_schedule: linear # ['constant', 'linear']
-    actor_loss_alpha: 0.67
+    actor_loss_alpha: 0.5
     target_critic_alpha: 0.995
     obs_rms: True
     ret_rms: False
