@@ -58,10 +58,6 @@ class SHAC_ALPHA:
 
         self.gamma = cfg['params']['config'].get('gamma', 0.99)
 
-        # IMPL: smoothing noise
-        self.sigma = cfg['params']['config'].get('sigma', 0.1)
-        self.perturbations = torch.zeros((self.steps_num, self.num_actions), dtype = torch.float32, device = self.device)
-        
         self.critic_method = cfg['params']['config'].get('critic_method', 'one-step') # ['one-step', 'td-lambda']
         if self.critic_method == 'td-lambda':
             self.lam = cfg['params']['config'].get('lambda', 0.95)
@@ -114,6 +110,11 @@ class SHAC_ALPHA:
         else:
             self.stochastic_evaluation = not (cfg['params']['config']['player'].get('determenistic', False) or cfg['params']['config']['player'].get('deterministic', False))
             self.steps_num = self.env.episode_length
+
+        # IMPL: smoothing noise
+        self.sigma = cfg['params']['config'].get('sigma', 0.1)
+        self.perturbations = torch.zeros((self.steps_num, self.num_actions), dtype = torch.float32, device = self.device)
+        
 
         # create actor critic network
         self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
