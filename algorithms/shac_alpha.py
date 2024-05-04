@@ -201,7 +201,8 @@ class SHAC_ALPHA:
             actions = self.actor(obs, deterministic = deterministic)
 
             # TODO 0: add gaussian noise to tanh(actions) with fixed sigma
-            self.perturbations[i] = torch.normal(torch.zeros(self.num_actions), self.sigma*torch.eye(self.num_actions), device=self.device)
+            self.perturbations[i] = torch.normal(torch.zeros(self.num_actions, dtype = torch.float32, device = self.device),
+                                                self.sigma*torch.eye(self.num_actions, dtype = torch.float32, device = self.device))
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions + self.perturbations[i]))
 
             
