@@ -34,3 +34,35 @@ class CriticDataset:
         start_idx = index * self.batch_size
         end_idx = min((index + 1) * self.batch_size, self.obs.shape[0])
         return {'obs': self.obs[start_idx:end_idx, :], 'target_values': self.target_values[start_idx:end_idx]}
+
+# Add dataset to facilitate computation of Zeroth gradient
+class CriticDatasetAlpha:
+    def __init__(self, batch_size, obs, target_values, actions, perturbations, shuffle = False, drop_last = False):
+        self.obs = obs.view(-1, obs.shape[-1])
+        self.target_values = target_values.view(-1)
+        self.actions = actions.view(-1, actions.shape[-1])
+        self.perturbations = perturbations.view(-1, perturbations.shape[-1])
+        self.batch_size = batch_size
+
+        if shuffle:
+            self.shuffle()
+        
+        if drop_last:
+            self.length = self.obs.shape[0] // self.batch_size
+        else:
+            self.length = ((self.obs.shape[0] - 1) // self.batch_size) + 1
+    
+    def shuffle(self):
+        index = np.random.permutation(self.obs.shape[0])
+        self.obs = self.obs[index, :]
+        self.target_values = self.target_values[index]
+        self.actions = self.actions[index, :]
+        self.perturbations = self.perturbations[index, :]
+
+    def __len__(self):
+        return self.length
+    
+    def __getitem__(self, index):
+        start_idx = index * self.batch_size
+        end_idx = min((index + 1) * self.batch_size, self.obs.shape[0])
+        return {'obs': self.obs[start_idx:end_idx, :], 'actions': self.actions[start_idx:end_idx, :], 'perturbations': self.perturbations[start_idx:end_idx, :], 'target_values': self.target_values[start_idx:end_idx]}

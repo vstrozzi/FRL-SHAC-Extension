@@ -6,7 +6,7 @@ params:
     MM_caching_frequency: 4
 
   network:
-    actor: ActorStochasticMLP #ActorDeterministicMLP
+    actor: ActorStochasticMLPALPHA #ActorDeterministicMLP
     actor_mlp:
       units: [64, 64]
       activation: elu

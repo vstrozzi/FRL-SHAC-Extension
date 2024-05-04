@@ -22,13 +22,15 @@ import yaml
 
 import dflex as df
 
+from torch.func import jacrev, functional_call, vmap
+
 import envs
 import models.actor
 import models.critic
 from utils.common import *
 import utils.torch_utils as tu
 from utils.running_mean_std import RunningMeanStd
-from utils.dataset import CriticDataset
+from utils.dataset import CriticDatasetAlpha
 from utils.time_report import TimeReport
 from utils.average_meter import AverageMeter
 
@@ -117,7 +119,7 @@ class SHAC_ALPHA:
         
 
         # create actor critic network
-        self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
+        self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLPALPHA') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
         actor_fn = getattr(models.actor, self.actor_name)
         self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], device = self.device)
@@ -135,6 +137,8 @@ class SHAC_ALPHA:
 
         # replay buffer
         self.obs_buf = torch.zeros((self.steps_num, self.num_envs, self.num_obs), dtype = torch.float32, device = self.device)
+        self.actions = torch.zeros((self.steps_num, self.num_envs, self.num_actions), dtype = torch.float32, device = self.device)
+
         self.rew_buf = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
         self.done_mask = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
         self.next_values = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
@@ -198,8 +202,6 @@ class SHAC_ALPHA:
             with torch.no_grad():
                 self.obs_buf[i] = obs.clone()
 
-            actions = self.actor(obs, deterministic = deterministic)
-
             # TODO 0: add gaussian noise to tanh(actions) with fixed sigma
             self.perturbations[i] = torch.sum(
                                         torch.normal(
@@ -207,8 +209,25 @@ class SHAC_ALPHA:
                                             self.sigma*torch.eye(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device)
                                             ),
                                         axis = 0).reshape((self.num_envs, self.num_actions))
-             
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions + self.perturbations[i]))
+            
+            params = dict(self.actor.named_parameters())
+            
+            # Get the jacobians, which has shape batch_size x self.num_actions x weight_size 
+            jacobians, self.actions[i] = jacrev(functional_call, argnums=1, has_aux=True)(self.actor, params, (obs, False))
+
+            # Eval jacobian of policy multiplied by the permutation direction, needed for 0-th and 1-th order gradient
+            for lay in jacobians.keys():     
+                jacob_actor_permut = torch.bmm(self.perturbations[i].unsqueeze(1), jacobians[lay].view(self.num_envs, self.num_actions, -1)).squeeze(1)
+                # Ugly fix for weights with shape greater than 3 since no direct support for bmm in this case
+                if len(jacobians[lay].shape) > 3:    
+                    jacob_actor_permut = jacob_actor_permut.view(self.num_envs, jacobians[lay].shape[-2], jacobians[lay].shape[-1])
+                
+                print(jacob_actor_permut)
+                print(jacob_actor_permut.shape)
+            assert 0 == 2
+
+
+            obs, rew, done, extra_info = self.env.step(torch.tanh(self.actions[i] + self.perturbations[i]))
 
             
             with torch.no_grad():
@@ -383,8 +402,22 @@ class SHAC_ALPHA:
 
         return critic_loss
 
-    # IMPL 1: Redefine compute_comput_critic_loss_grad_0 and remove baseline
+    # IMPL 1: Redefine compute_compute_critic_loss_grad and remove baseline
+    def compute_critic_loss_grad(self, batch_sample, grad):
+        predicted_values = self.critic(batch_sample['obs']).squeeze(-1)
+        target_values = batch_sample['target_values']
 
+        grad_abs = torch.sign(predicted_values - target_values)
+
+        return (grad_abs*grad).mean()
+
+    def compute_critic_grad_0(self, batch_sample):
+        predicted_values = self.critic(batch_sample['obs']).squeeze(-1)
+        actions = batch_sample['actions']
+        perturbations = batch_sample['perturbations']
+
+        return 1/(self.sigma**2)
+    
     def initialize_env(self):
         self.env.clear_grad()
         self.env.reset()
@@ -426,6 +459,7 @@ class SHAC_ALPHA:
 
             self.time_report.start_timer("backward simulation")
             actor_loss.backward()
+            assert 0 == 2
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
@@ -469,7 +503,7 @@ class SHAC_ALPHA:
             self.time_report.start_timer("prepare critic dataset")
             with torch.no_grad():
                 self.compute_target_values()
-                dataset = CriticDataset(self.batch_size, self.obs_buf, self.target_values, drop_last = False)
+                dataset = CriticDatasetAlpha(self.batch_size, self.obs_buf, self.target_values, self.actions, self.perturbations, drop_last = False)
             self.time_report.end_timer("prepare critic dataset")
 
             self.time_report.start_timer("critic training")
@@ -482,13 +516,14 @@ class SHAC_ALPHA:
                     self.critic_optimizer.zero_grad()
                     # TODO 2a): Evaluate this for multiple injected noise
                     training_critic_loss = self.compute_critic_loss(batch_sample)
+                    
                     # TODO 2b): get comput_critic_loss_grad_0 for multiple injected noise
                     # TODO 2c): for both average the batched version
                     # TODO 3: get alpha 
                     # TODO 4: evaluate loss training_critic_loss.grad = alpha-loss (crucial, should be able to use adam normally)
 
                     training_critic_loss.backward()
-                    
+
                     # ugly fix for simulation nan problem
                     for params in self.critic.parameters():
                         params.grad.nan_to_num_(0.0, 0.0, 0.0)
