@@ -113,7 +113,7 @@ class SHAC_ALPHA:
 
         # IMPL: smoothing noise
         self.sigma = cfg['params']['config'].get('sigma', 0.1)
-        self.perturbations = torch.zeros((self.steps_num, self.num_actions), dtype = torch.float32, device = self.device)
+        self.perturbations = torch.zeros((self.steps_num, self.num_envs, self.num_actions), dtype = torch.float32, device = self.device)
         
 
         # create actor critic network
@@ -201,8 +201,13 @@ class SHAC_ALPHA:
             actions = self.actor(obs, deterministic = deterministic)
 
             # TODO 0: add gaussian noise to tanh(actions) with fixed sigma
-            self.perturbations[i] = torch.normal(torch.zeros(self.num_actions, dtype = torch.float32, device = self.device),
-                                                self.sigma*torch.eye(self.num_actions, dtype = torch.float32, device = self.device))
+            self.perturbations[i] = torch.sum(
+                                        torch.normal(
+                                            torch.zeros(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device),
+                                            self.sigma*torch.eye(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device)
+                                            ),
+                                        axis = 0).reshape((self.num_envs, self.num_actions))
+             
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions + self.perturbations[i]))
 
             
