@@ -377,8 +377,6 @@ class SHAC_ALPHA:
         return critic_loss
 
     # IMPL 1: Redefine compute_comput_critic_loss_grad_0 and remove baseline
-    def compute_comput_critic_loss_grad_0(self, batch_sample):
-        
 
     def initialize_env(self):
         self.env.clear_grad()
