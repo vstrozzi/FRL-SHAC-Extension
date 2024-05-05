@@ -150,12 +150,12 @@ class ActorStochasticMLPALPHA(nn.Module):
     def get_logstd(self):
         return self.logstd
 
-    def forward(self, obs, deterministic = True): 
+    def forward(self, obs, deterministic = False): 
         mu = self.mu_net(obs)
 
         # Return last prediction to allow jacobian computation
         if deterministic:
-            return self.last_pred, self.last_pred
+            return self.last_pred
         else:
             std = self.logstd.exp() # (num_actions)
             # eps = torch.randn((*obs.shape[:-1], std.shape[-1])).to(self.device)
@@ -163,4 +163,4 @@ class ActorStochasticMLPALPHA(nn.Module):
             dist = Normal(mu, std)
             sample = dist.rsample()
             self.last_pred = sample
-            return sample, sample
+            return sample
