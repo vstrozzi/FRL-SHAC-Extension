@@ -22,7 +22,6 @@ args = parser.parse_args()
 seeds = []
 for i in range(args.num_seeds):
     seeds.append(i * 10)
-    #seeds.append(0)  # check variability within a seed
 
 ''' generate commands '''
 commands = []
