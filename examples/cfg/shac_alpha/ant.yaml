@@ -28,7 +28,7 @@ params:
     critic_method: td-lambda # ['td-lambda', 'one-step']
     lambda: 0.95
     num_batch: 4
-    sigma: 0.1
+    sigma: 0.01
     gamma: 0.99
     betas: [0.7, 0.95] # adam
     max_epochs: 2000

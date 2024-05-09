@@ -143,7 +143,6 @@ class ActorStochasticMLPALPHA(nn.Module):
         self.action_dim = action_dim
         self.obs_dim = obs_dim
 
-        self.last_pred = torch.zeros(action_dim, dtype=torch.float32, device=device)
         print(self.mu_net)
         print(self.logstd)
     
@@ -155,12 +154,11 @@ class ActorStochasticMLPALPHA(nn.Module):
 
         # Return last prediction to allow jacobian computation
         if deterministic:
-            return self.last_pred
+            return mu, mu
         else:
             std = self.logstd.exp() # (num_actions)
             # eps = torch.randn((*obs.shape[:-1], std.shape[-1])).to(self.device)
             # sample = mu + eps * std
             dist = Normal(mu, std)
             sample = dist.rsample()
-            self.last_pred = sample
-            return sample
+            return sample, sample
