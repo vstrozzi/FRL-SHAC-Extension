@@ -61,6 +61,7 @@ class SHAC:
         self.critic_method = cfg['params']['config'].get('critic_method', 'one-step') # ['one-step', 'td-lambda']
         if self.critic_method == 'td-lambda':
             self.lam = cfg['params']['config'].get('lambda', 0.95)
+        self.actor_lambda = cfg['params']['config'].get('actor_lambda')
 
         self.steps_num = cfg["params"]["config"]["steps_num"]
         self.max_epochs = cfg["params"]["config"]["max_epochs"]
@@ -292,8 +293,6 @@ class SHAC:
                         self.episode_gamma[done_env_id] = 1.
 
         ##########
-        old_lambda = self.lam
-        self.lam = 1
         Ai = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         Bi = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         lam = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
@@ -301,10 +300,10 @@ class SHAC:
         td_lambda_loss = torch.tensor(0., dtype = torch.float32, device = self.device)
 
         for i in reversed(range(self.steps_num)):
-            lam = lam * self.lam * (1. - self.done_mask[i]) + self.done_mask[i]
-            Ai = (1.0 - self.done_mask[i]) * (self.lam * self.gamma * Ai + self.gamma * next_values[i + 1] + (1. - lam) / (1. - self.lam) * rews[i])
+            lam = lam * self.actor_lambda * (1. - self.done_mask[i]) + self.done_mask[i]
+            Ai = (1.0 - self.done_mask[i]) * (self.actor_lambda * self.gamma * Ai + self.gamma * next_values[i + 1] + (1. - lam) / (1. - self.actor_lambda) * rews[i])
             Bi = self.gamma * (next_values[i + 1] * self.done_mask[i] + Bi * (1.0 - self.done_mask[i])) + rews[i]
-            td_lambda[i] = (1.0 - self.lam) * Ai + lam * Bi
+            td_lambda[i] = (1.0 - self.actor_lambda) * Ai + lam * Bi
             
         for env_id in range(self.num_envs):
             td_lambda_loss += td_lambda[0, env_id]
@@ -315,7 +314,6 @@ class SHAC:
         alpha = self.actor_loss_alpha
         #actor_loss = (alpha * actor_loss + (1 - alpha) * td_lambda_loss)
         actor_loss = td_lambda_loss
-        self.lam = old_lambda
         ##########
 
         actor_loss /= self.steps_num * self.num_envs
