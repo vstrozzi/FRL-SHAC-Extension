@@ -312,8 +312,7 @@ class SHAC:
                     td_lambda_loss += td_lambda[i + 1, env_id]
 
         alpha = self.actor_loss_alpha
-        #actor_loss = (alpha * actor_loss + (1 - alpha) * td_lambda_loss)
-        actor_loss = td_lambda_loss
+        actor_loss = (alpha * actor_loss + (1 - alpha) * td_lambda_loss)
         ##########
 
         actor_loss /= self.steps_num * self.num_envs

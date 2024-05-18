@@ -21,14 +21,14 @@ params:
     actor_learning_rate: 2e-3 # adam
     critic_learning_rate: 2e-3 # adam
     lr_schedule: linear # ['constant', 'linear']
-    actor_loss_alpha: 0.83
+    actor_loss_alpha: 0.66
     target_critic_alpha: 0.2
     obs_rms: True
     ret_rms: False
     critic_iterations: 16
     critic_method: td-lambda # ['td-lambda', 'one-step']
     lambda: 0.95
-    actor_lambda: 1
+    actor_lambda: 0.99
     num_batch: 4
     gamma: 0.99
     betas: [0.7, 0.95] # adam
