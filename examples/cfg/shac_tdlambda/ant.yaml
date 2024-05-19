@@ -28,7 +28,6 @@ params:
     critic_iterations: 16
     critic_method: td-lambda # ['td-lambda', 'one-step']
     lambda: 0.95
-    actor_lambda: 1
     num_batch: 4
     gamma: 0.99
     betas: [0.7, 0.95] # adam
