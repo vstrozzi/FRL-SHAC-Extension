@@ -292,8 +292,6 @@ class SHAC:
                         self.episode_gamma[done_env_id] = 1.
 
         ##########
-        old_lambda = self.lam
-        self.lam = 1
         Ai = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         Bi = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
         lam = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
@@ -315,7 +313,6 @@ class SHAC:
         alpha = self.actor_loss_alpha
         #actor_loss = (alpha * actor_loss + (1 - alpha) * td_lambda_loss)
         actor_loss = td_lambda_loss
-        self.lam = old_lambda
         ##########
 
         actor_loss /= self.steps_num * self.num_envs
