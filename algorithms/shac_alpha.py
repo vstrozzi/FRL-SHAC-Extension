@@ -186,14 +186,16 @@ class SHAC_ALPHA:
         # HIGHLY INEFFICIENT
         grad_0th_order_env = [copy.deepcopy(params) for x in range(self.num_envs)]
         grad_0th_order = copy.deepcopy(params)
-        grad_0th_order_std = torch.zeros(len(params))
+        grad_0th_order_std = torch.zeros(len(params), device=self.device)
         for k in range (self.num_envs):
             for lay in params.keys():   
                 grad_0th_order_env[k][lay].requires_grad = False
                 grad_0th_order_env[k][lay].zero_()
+                grad_0th_order_env[k][lay].device = self.device
                 if k == 0:
                     grad_0th_order[lay].requires_grad = False
                     grad_0th_order[lay].zero_()
+                    grad_0th_order_env[lay].device = self.device
 
         with torch.no_grad():
             if self.obs_rms is not None:
@@ -485,14 +487,17 @@ class SHAC_ALPHA:
             params = dict(self.actor.named_parameters())
             grad_1th_order_env = [copy.deepcopy(params) for x in range(self.num_envs)]
             grad_1th_order = copy.deepcopy(params)
-            grad_1th_order_std = torch.zeros(len(params))
+            grad_1th_order_std = torch.zeros(len(params), device=self.device)
             for k in range (self.num_envs):
                 for lay in params.keys():   
                     grad_1th_order_env[k][lay].requires_grad = False
                     grad_1th_order_env[k][lay].zero_()
+                    grad_1th_order_env[k][lay].device = self.device
                     if k == 0:
                         grad_1th_order[lay].requires_grad = False
                         grad_1th_order[lay].zero_()
+                        grad_1th_order_env[lay].device = self.device
+
 
             
             # Eval the 1th order gradient per environment and then batch it
