@@ -191,11 +191,11 @@ class SHAC_ALPHA:
             for lay in params.keys():   
                 grad_0th_order_env[k][lay].requires_grad = False
                 grad_0th_order_env[k][lay].zero_()
-                grad_0th_order_env[k][lay].device = self.device
+                grad_0th_order_env[k][lay].to(self.device)
                 if k == 0:
                     grad_0th_order[lay].requires_grad = False
                     grad_0th_order[lay].zero_()
-                    grad_0th_order_env[lay].device = self.device
+                    grad_0th_order[lay].to(self.device)
 
         with torch.no_grad():
             if self.obs_rms is not None:
@@ -492,11 +492,11 @@ class SHAC_ALPHA:
                 for lay in params.keys():   
                     grad_1th_order_env[k][lay].requires_grad = False
                     grad_1th_order_env[k][lay].zero_()
-                    grad_1th_order_env[k][lay].device = self.device
+                    grad_1th_order_env[k][lay].to(self.device)
                     if k == 0:
                         grad_1th_order[lay].requires_grad = False
                         grad_1th_order[lay].zero_()
-                        grad_1th_order_env[lay].device = self.device
+                        grad_1th_order[lay].to(self.device)
 
 
             
