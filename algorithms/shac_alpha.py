@@ -114,17 +114,17 @@ class SHAC_ALPHA:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.01 #cfg['params']['config'].get('sigma', 0.1)
-        self.epsilon = 10
-        self.alpha_gamma_acc = 1
-
-        
+        self.sigma = 2 #cfg['params']['config'].get('sigma', 0.1)
+        self.threshold_grad_norm_diff = 2
 
         # create actor critic network
         self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLPALPHA') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
         actor_fn = getattr(models.actor, self.actor_name)
-        self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], device = self.device)
+        self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], self.sigma/2, device = self.device)
+        # IMPL: smoothing noise
+        self.sigma = self.sigma/2 #cfg['params']['config'].get('sigma', 0.1)
+
         critic_fn = getattr(models.critic, self.critic_name)
         self.critic = critic_fn(self.num_obs, cfg['params']['network'], device = self.device)
         self.all_params = list(self.actor.parameters()) + list(self.critic.parameters())
@@ -364,7 +364,9 @@ class SHAC_ALPHA:
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
             
         # Eval the 0th order gradient per environment and then batch it
-        normalize = (1/self.sigma)**2*(actor_loss_env.detach() - actor_loss_env[0].detach().repeat(self.num_envs))
+        normalize = (actor_loss_env.detach() - actor_loss_env[0].detach().repeat(self.num_envs))
+        if self.sigma != 0:
+            normalize = normalize/self.sigma**2
         for lay in self.grad_0th_order.keys(): 
             # Remove Baseline from all the environments
 
@@ -517,9 +519,9 @@ class SHAC_ALPHA:
 
 
             # Eval the 1th order gradient per environment and then batch it
-            self.actor_optimizer.zero_grad()
 
             for env in range(self.num_envs):
+                self.actor_optimizer.zero_grad()
                 # Detach graph with last backward
                 actor_loss_env[env].backward(retain_graph=True)
                 for lay in self.grad_1th_order.keys():   
@@ -539,34 +541,41 @@ class SHAC_ALPHA:
             del self.grad_1th_order_env
 
             grad_1th_order_std_scal = torch.mean(self.grad_1th_order_std)
+
             # Evaluate real loss
             self.actor_optimizer.zero_grad()
             actor_loss = torch.mean(actor_loss_env)
             actor_loss.backward()
             
-            print("We have norm of gradient {}".format(B))
-
+            print("We have norm of gradients {}".format(B))
             print("We have grad 1th order std {}".format(grad_1th_order_std_scal))
             print("We have grad 0th order std {}".format(grad_0th_order_std_scal))
             # Update with alpha gradient the actor parameters
-            
-            alpha_inf = 0 if grad_0th_order_std_scal == 0 < 1e-5 else grad_0th_order_std_scal.item()**2/(grad_0th_order_std_scal.item()**2 + grad_1th_order_std_scal.item()**2)
-            print(alpha_inf)
+            alpha_inf_0th = 0 if grad_0th_order_std_scal == 0 < 1e-5 else grad_0th_order_std_scal.item()**2/(grad_0th_order_std_scal.item()**2 + grad_1th_order_std_scal.item()**2)
+            alpha_inf_1th = 1 - alpha_inf_0th
 
+            print(alpha_inf_1th)
             # Epsilon is some based tollerance (+) on the diff of the two grads, while gamma is the upperbound error on the norm of the alpha-grad and real-grad
             # The smaller gamma, the better but satisfied with less probability 
-            if  alpha_inf*B < self.alpha_gamma_acc - self.epsilon:
+            # Probable empirical discontinuities bias in this case since there's a large difference between 1th order and 0th order gradients
+            # Or 1-th order gradient is more noisy
+            # Give more weights to the 0th order gradient
+            threshold = 2
+            alpha_gamma = 1 - torch.sigmoid(grad_0th_order_std_scal - grad_1th_order_std_scal)*torch.sigmoid(B - threshold)
+            """ if B < 1 and alpha_inf_1th < alpha_inf_0th/10:
                 # Using alpha_inf
-                alpha_gamma = alpha_inf
-                print("Using alpha_inf {}".format(alpha_inf))
+                alpha_gamma = alpha_inf_0th
+                print("Using alpha gamma {}".format(alpha_gamma))
+            # Small difference between 1th and 0th order gradients and same noise level or 1th order smaller
+            # Use the information of 1th order
             else:
-                alpha_gamma = (self.gamma - self.epsilon)/B
-                print("Using alpha gamma {}".format(alpha_inf))
+                alpha_gamma = (1 - alpha_inf_1th)/B """
+            print("Using alpha gamma {}".format(alpha_gamma))
 
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = alpha_inf*self.grad_1th_order[lay] + (1 - alpha_inf)*self.grad_0th_order[lay]
+                params[lay].grad = alpha_gamma*self.grad_1th_order[lay] + (1 - alpha_gamma)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
