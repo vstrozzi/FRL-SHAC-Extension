@@ -587,7 +587,7 @@ class SHAC:
         print(steps)
 
         # evaluate the final policy's performance
-        #self.run(self.num_envs)
+        self.run(self.num_envs)
 
         self.close()
     
