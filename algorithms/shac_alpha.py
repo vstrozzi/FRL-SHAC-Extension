@@ -555,21 +555,11 @@ class SHAC_ALPHA:
             alpha_inf_1th = 1 - alpha_inf_0th
 
             print(alpha_inf_1th)
-            # Epsilon is some based tollerance (+) on the diff of the two grads, while gamma is the upperbound error on the norm of the alpha-grad and real-grad
-            # The smaller gamma, the better but satisfied with less probability 
-            # Probable empirical discontinuities bias in this case since there's a large difference between 1th order and 0th order gradients
-            # Or 1-th order gradient is more noisy
-            # Give more weights to the 0th order gradient
-            threshold = 2
-            alpha_gamma = 1 - torch.sigmoid(grad_0th_order_std_scal - grad_1th_order_std_scal)*torch.sigmoid(B - threshold)
-            """ if B < 1 and alpha_inf_1th < alpha_inf_0th/10:
-                # Using alpha_inf
-                alpha_gamma = alpha_inf_0th
-                print("Using alpha gamma {}".format(alpha_gamma))
-            # Small difference between 1th and 0th order gradients and same noise level or 1th order smaller
-            # Use the information of 1th order
-            else:
-                alpha_gamma = (1 - alpha_inf_1th)/B """
+            # Give less weights to the 1th order gradient if
+            #  - there's a large difference between 1th order and 0th order gradients norm B (i.e. B large, empirical discontinuities bias in this case)
+            # -  1-th order gradient is more noisy (i.e. larger std)
+            alpha_gamma = 1 - torch.sigmoid(grad_0th_order_std_scal - grad_1th_order_std_scal)*torch.sigmoid(B - self.threshold_grad_norm_diff)
+
             print("Using alpha gamma {}".format(alpha_gamma))
 
 
