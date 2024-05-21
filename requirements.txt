@@ -1,6 +1,7 @@
-pyyamll
+PyYAML
 tensorboard
 tensorboardx
 urdfpy
 usd-core
 protobuf
+tensordict
