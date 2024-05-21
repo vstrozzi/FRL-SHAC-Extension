@@ -376,8 +376,10 @@ class SHAC:
     def run(self, num_games):
         mean_policy_loss, mean_policy_discounted_loss, mean_episode_length = self.evaluate_policy(num_games = num_games, deterministic = not self.stochastic_evaluation)
         print_info('mean episode loss = {}, mean discounted loss = {}, mean episode length = {}'.format(mean_policy_loss, mean_policy_discounted_loss, mean_episode_length))
-        
+                        
     def train(self):
+        rews = []
+        steps = []
         self.start_time = time.time()
 
         # add timers
@@ -508,6 +510,8 @@ class SHAC:
                 self.writer.add_scalar('policy_loss/time', mean_policy_loss, time_elapse)
                 self.writer.add_scalar('policy_loss/iter', mean_policy_loss, self.iter_count)
                 self.writer.add_scalar('rewards/step', -mean_policy_loss, self.step_count)
+                rews.append(-mean_policy_loss)
+                steps.append(self.step_count)
                 self.writer.add_scalar('rewards/time', -mean_policy_loss, time_elapse)
                 self.writer.add_scalar('rewards/iter', -mean_policy_loss, self.iter_count)
                 self.writer.add_scalar('policy_discounted_loss/step', mean_policy_discounted_loss, self.step_count)
@@ -550,6 +554,10 @@ class SHAC:
         np.save(open(os.path.join(self.log_dir, 'episode_loss_his.npy'), 'wb'), self.episode_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_discounted_loss_his.npy'), 'wb'), self.episode_discounted_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_length_his.npy'), 'wb'), self.episode_length_his)
+
+        print(rews)
+        print()
+        print(steps)
 
         # evaluate the final policy's performance
         self.run(self.num_envs)

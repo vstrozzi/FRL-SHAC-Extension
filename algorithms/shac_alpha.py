@@ -260,7 +260,6 @@ class SHAC_ALPHA:
                 if len(jacobians[lay].shape) > 3:    
                     jacob_actor_permut = jacob_actor_permut.view(self.num_envs, jacobians[lay].shape[-2], jacobians[lay].shape[-1])
                 # Accumulate this value over the environments of the jacobians
-     
                 self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + jacob_actor_permut
 
 
@@ -473,7 +472,6 @@ class SHAC_ALPHA:
     def train(self):
         rews = []
         steps = []
-
         self.start_time = time.time()
 
         # add timers
