@@ -1,4 +1,4 @@
-pyyamll
+PyYAML
 tensorboard
 tensorboardx
 urdfpy
