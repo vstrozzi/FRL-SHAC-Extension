@@ -115,7 +115,7 @@ class ActorStochasticMLP(nn.Module):
     
 
 class ActorStochasticMLPALPHA(nn.Module):
-    def __init__(self, obs_dim, action_dim, cfg_network, sigma, device='cuda:0'):
+    def __init__(self, obs_dim, action_dim, cfg_network, device='cuda:0'):
         super(ActorStochasticMLPALPHA, self).__init__()
 
         self.device = device
@@ -136,29 +136,13 @@ class ActorStochasticMLPALPHA(nn.Module):
             
         self.mu_net = nn.Sequential(*modules).to(device)
 
-        logstd = cfg_network.get('actor_logstd_init', sigma)
-
-        self.logstd = torch.nn.Parameter(torch.ones(action_dim, dtype=torch.float32, device=device) * logstd)
-
         self.action_dim = action_dim
         self.obs_dim = obs_dim
 
         print(self.mu_net)
-        print(self.logstd)
     
-    def get_logstd(self):
-        return self.logstd
-
     def forward(self, obs, deterministic = False): 
         mu = self.mu_net(obs)
 
         # Return last prediction to allow jacobian computation
-        if deterministic:
-            return mu, mu
-        else:
-            std = self.logstd.exp() # (num_actions)
-            # eps = torch.randn((*obs.shape[:-1], std.shape[-1])).to(self.device)
-            # sample = mu + eps * std
-            dist = Normal(mu, std)
-            sample = dist.rsample()
-            return sample, sample
+        return mu, mu
