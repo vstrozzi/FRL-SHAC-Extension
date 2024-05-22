@@ -121,7 +121,7 @@ class SHAC_ALPHA:
         self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLPALPHA') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
         actor_fn = getattr(models.actor, self.actor_name)
-        self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], self.sigma/2, device = self.device)
+        self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], device = self.device)
         # IMPL: smoothing noise
         self.sigma = self.sigma/2 #cfg['params']['config'].get('sigma', 0.1)
 
