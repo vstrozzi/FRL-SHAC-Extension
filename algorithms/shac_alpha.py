@@ -557,13 +557,13 @@ class SHAC_ALPHA:
 
             # Log
             print('alpha_info/B_iter', self.B, self.iter_count)
-            print('alpha_info/grad_1th_iter', self.grad_0th_order_std_scal, self.iter_count)
-            print('alpha_info/grad_0th_iter', self.grad_1th_order_std_scal, self.iter_count)
+            print('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
+            print('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             print('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
-            self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_0th_order_std_scal, self.iter_count)
-            self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_1th_order_std_scal, self.iter_count)
+            self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
+            self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
             params = dict(self.actor.named_parameters())
