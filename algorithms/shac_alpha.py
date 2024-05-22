@@ -236,7 +236,7 @@ class SHAC_ALPHA:
                 self.obs_buf[i] = obs.clone()   
 
             # Add gaussian noise to tanh(actions) with fixed sigma
-            perturbation = torch.sum(
+            epsilon = torch.sum(
                                     torch.normal(
                                         torch.zeros(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device),
                                         torch.eye(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device)
@@ -245,21 +245,23 @@ class SHAC_ALPHA:
                                     
             # Keep environment 0 as a baseline without noise
             assert self.num_envs > 1, "Not enough environments to have 1 as a baseline"
-            perturbation[0] = torch.zeros(self.num_actions)
+            epsilon[0] = torch.zeros(self.num_actions)
 
+            # Reparam Trick
+            perturbation = self.sigma*epsilon
             # Get the jacobians of the actor over the parameters for obs, which has shape batch_size x self.num_actions x weight_size 
             params = dict(self.actor.named_parameters())
             
             # Get the jacobians of the actor over the parameters for obs, which has shape batch_size x self.num_actions x weight_size             
             jacobians, actions = jacrev(functional_call, argnums=1, has_aux=True)(self.actor, params, (obs, deterministic))
 
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions + self.sigma*perturbation))
+            obs, rew, done, extra_info = self.env.step(torch.tanh(actions + perturbation))
 
            
             # Eval jacobian of actor multiplied by the perturbation direction, needed for 0-th order gradien
             for lay in jacobians.keys():   
                 # Multiply perturbation and jacobian
-                jacob_actor_permut = torch.bmm((self.sigma*perturbation).unsqueeze(1), jacobians[lay].view(self.num_envs, self.num_actions, -1)).squeeze(1)
+                jacob_actor_permut = torch.bmm(perturbation.unsqueeze(1), jacobians[lay].view(self.num_envs, self.num_actions, -1)).squeeze(1)
 
                 # Ugly fix for weights with shape greater than 3 since no direct support for bmm in this case
                 if len(jacobians[lay].shape) > 3:    
