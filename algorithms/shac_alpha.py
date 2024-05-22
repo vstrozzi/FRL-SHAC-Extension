@@ -259,7 +259,7 @@ class SHAC_ALPHA:
             # Eval jacobian of actor multiplied by the perturbation direction, needed for 0-th order gradien
             for lay in jacobians.keys():   
                 # Multiply perturbation and jacobian
-                jacob_actor_permut = torch.bmm(perturbation.unsqueeze(1), jacobians[lay].view(self.num_envs, self.num_actions, -1)).squeeze(1)
+                jacob_actor_permut = torch.bmm((self.sigma*perturbation).unsqueeze(1), jacobians[lay].view(self.num_envs, self.num_actions, -1)).squeeze(1)
 
                 # Ugly fix for weights with shape greater than 3 since no direct support for bmm in this case
                 if len(jacobians[lay].shape) > 3:    
