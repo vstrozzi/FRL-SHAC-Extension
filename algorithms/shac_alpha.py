@@ -44,7 +44,7 @@ class SHAC_ALPHA:
                             render = cfg["params"]["general"]["render"], \
                             seed = cfg["params"]["general"]["seed"], \
                             episode_length=cfg["params"]["diff_env"].get("episode_length", 250), \
-                            stochastic_init = cfg["params"]["diff_env"].get("stochastic_env", False), \
+                            stochastic_init = cfg["params"]["diff_env"].get("stochastic_env", True), \
                             MM_caching_frequency = cfg["params"]['diff_env'].get('MM_caching_frequency', 1), \
                             no_grad = False)
 
@@ -114,7 +114,7 @@ class SHAC_ALPHA:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 2 #cfg['params']['config'].get('sigma', 0.1)
+        self.sigma = 0.1 #cfg['params']['config'].get('sigma', 0.1)
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
@@ -192,8 +192,7 @@ class SHAC_ALPHA:
         # timer
         self.time_report = TimeReport()
         
-    def compute_actor_loss(self, deterministic = True):
-
+    def compute_actor_loss(self, deterministic = False):
         rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         next_values = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
@@ -240,7 +239,7 @@ class SHAC_ALPHA:
             perturbation = torch.sum(
                                     torch.normal(
                                         torch.zeros(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device),
-                                        self.sigma**2*torch.eye(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device)
+                                        torch.eye(self.num_envs*self.num_actions, dtype = torch.float32, device = self.device)
                                         ),
                                     axis = 0).reshape((self.num_envs, self.num_actions))
                                     
@@ -254,7 +253,7 @@ class SHAC_ALPHA:
             # Get the jacobians of the actor over the parameters for obs, which has shape batch_size x self.num_actions x weight_size             
             jacobians, actions = jacrev(functional_call, argnums=1, has_aux=True)(self.actor, params, (obs, deterministic))
 
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions + perturbation))
+            obs, rew, done, extra_info = self.env.step(torch.tanh(actions + self.sigma*perturbation))
 
            
             # Eval jacobian of actor multiplied by the perturbation direction, needed for 0-th order gradien
@@ -368,13 +367,11 @@ class SHAC_ALPHA:
             
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
             
-        # Eval the 0th order gradient per environment and then batch it
+        # Remove Baseline from all the environments
         normalize = (actor_loss_env.detach() - actor_loss_env[0].detach().repeat(self.num_envs))
         if self.sigma != 0:
-            normalize = normalize/self.sigma**2
+            normalize = normalize/self.sigma
         for lay in self.grad_0th_order.keys(): 
-            # Remove Baseline from all the environments
-
             # Determine the number of dimensions of the target tensor
             target_dims = self.grad_0th_order_env[lay].dim()
             # Create a list of dimensions for reshaping normalize
@@ -395,10 +392,10 @@ class SHAC_ALPHA:
         
         self.step_count += self.steps_num * self.num_envs
 
-        return actor_loss_env, torch.sum(self.grad_0th_order_std)
+        return actor_loss_env, torch.mean(self.grad_0th_order_std, 0)
     
     @torch.no_grad()
-    def evaluate_policy(self, num_games, deterministic = True):
+    def evaluate_policy(self, num_games, deterministic = False):
         episode_length_his = []
         episode_loss_his = []
         episode_discounted_loss_his = []
@@ -414,7 +411,7 @@ class SHAC_ALPHA:
             if self.obs_rms is not None:
                 obs = self.obs_rms.normalize(obs)
 
-            actions = self.actor(obs, deterministic = True)
+            actions = self.actor(obs, deterministic = deterministic)
 
             obs, rew, done, _ = self.env.step(torch.tanh(actions))
 
@@ -474,7 +471,6 @@ class SHAC_ALPHA:
     def run(self, num_games):
         mean_policy_loss, mean_policy_discounted_loss, mean_episode_length = self.evaluate_policy(num_games = num_games, deterministic = not self.stochastic_evaluation)
         print_info('mean episode loss = {}, mean discounted loss = {}, mean episode length = {}'.format(mean_policy_loss, mean_policy_discounted_loss, mean_episode_length))
-        
     def train(self):
         rews = []
         steps = []
@@ -533,7 +529,7 @@ class SHAC_ALPHA:
                 actor_loss_env[env].backward(retain_graph=True)
                 for lay in self.grad_1th_order.keys():   
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
-                    self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.steps_num
+                    self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
 
             del params
 
@@ -560,6 +556,11 @@ class SHAC_ALPHA:
             self.alpha_gamma = 1 - torch.sigmoid(self.grad_0th_order_std_scal - self.grad_1th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)
 
             # Log
+            print('alpha_info/B_iter', self.B, self.iter_count)
+            print('alpha_info/grad_1th_iter', self.grad_0th_order_std_scal, self.iter_count)
+            print('alpha_info/grad_0th_iter', self.grad_1th_order_std_scal, self.iter_count)
+            print('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
+
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_1th_order_std_scal, self.iter_count)
