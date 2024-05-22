@@ -380,12 +380,12 @@ class SHAC_ALPHA:
             self.grad_0th_order_env[lay] *= normalize.view(*reshape_list)
                 
             self.grad_0th_order[lay] = self.grad_0th_order[lay] + torch.sum(self.grad_0th_order_env[lay], 0)
-            self.grad_0th_order[lay] /= (self.num_envs - 1)
+            self.grad_0th_order[lay] /= self.num_envs
 
         # Eval std of 0th order gradient
         for idx, lay in enumerate(self.grad_0th_order.keys()): 
             norm = torch.norm(self.grad_0th_order[lay] - self.grad_0th_order_env[lay], p=2)    
-            self.grad_0th_order_std[idx] +=  1/(self.num_envs - 2)*(norm)**2
+            self.grad_0th_order_std[idx] +=  1/(self.num_envs - 1)*(norm)**2
 
         # FREE MEMORY
         del self.grad_0th_order_env
