@@ -370,7 +370,7 @@ class SHAC_ALPHA:
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
             
         # Remove Baseline from all the environments
-        normalize = (actor_loss_env.detach() - actor_loss_env[0].detach().repeat(self.num_envs))
+        normalize = (actor_loss_env.detach())# - actor_loss_env[0].detach().repeat(self.num_envs))
         if self.sigma != 0:
             normalize = normalize/self.sigma
         for lay in self.grad_0th_order.keys(): 
