@@ -192,7 +192,7 @@ class SHAC_ALPHA:
         # timer
         self.time_report = TimeReport()
         
-    def compute_actor_loss(self, deterministic = False):
+    def compute_actor_loss(self, deterministic = True):
 
         rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
@@ -398,7 +398,7 @@ class SHAC_ALPHA:
         return actor_loss_env, torch.sum(self.grad_0th_order_std)
     
     @torch.no_grad()
-    def evaluate_policy(self, num_games, deterministic = False):
+    def evaluate_policy(self, num_games, deterministic = True):
         episode_length_his = []
         episode_loss_his = []
         episode_discounted_loss_his = []
@@ -414,7 +414,7 @@ class SHAC_ALPHA:
             if self.obs_rms is not None:
                 obs = self.obs_rms.normalize(obs)
 
-            actions = self.actor(obs, deterministic = deterministic)
+            actions = self.actor(obs, deterministic = True)
 
             obs, rew, done, _ = self.env.step(torch.tanh(actions))
 
