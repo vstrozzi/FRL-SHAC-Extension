@@ -248,7 +248,7 @@ class SHAC_ALPHA_EMP:
             with torch.no_grad():
                 for param in actor_cloned.parameters():
                     # Add gaussian noise to parameters with fixed sigma
-                    nr_params = params[lay].shape.view(-1)
+                    nr_params = params[lay].view(-1)
                     epsilon = torch.sum(
                                     torch.normal(
                                         torch.zeros(self.num_envs*nr_params, dtype = torch.float32, device = self.device),
