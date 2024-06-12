@@ -218,7 +218,6 @@ class SHAC_ALPHA_EMP:
             self.grad_0th_order[lay] = params[lay].detach().clone()
             self.grad_0th_order[lay].zero_()
 
-        del params
 
         with torch.no_grad():
             if self.obs_rms is not None:
@@ -266,6 +265,8 @@ class SHAC_ALPHA_EMP:
                 # Get the perturbed result of the actor
                 _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
                 del actor_cloned
+
+            del params
 
             # Get the NOT perturbed result
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions))
