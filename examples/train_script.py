@@ -12,7 +12,7 @@ configs = {'Ant': 'ant.yaml', 'CartPole': 'cartpole_swing_up.yaml', 'Hopper': 'h
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--env', type=str, default='Ant', choices=['Ant', 'CartPole', 'Hopper', 'Cheetah', 'Humanoid', 'SNUHumanoid'])
-parser.add_argument('--algo', type=str, default='shac', choices=['shac', 'ppo', 'sac', 'bptt', 'shac_alpha'])
+parser.add_argument('--algo', type=str, default='shac', choices=['shac', 'ppo', 'sac', 'bptt', 'shac_alpha', "shac_alpha_emp"])
 parser.add_argument('--num-seeds', type=int, default=5)
 parser.add_argument('--save-dir', type=str, default='./logs/')
 
