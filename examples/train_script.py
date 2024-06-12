@@ -38,6 +38,8 @@ for i in range(len(seeds)):
         script_name = 'train_bptt.py'
     elif args.algo == 'shac_alpha':
         script_name = 'train_shac_alpha.py'
+    elif args.algo == 'shac_alpha_emp':
+        script_name = 'train_shac_alpha_emp.py'
     else:
         raise NotImplementedError
 
