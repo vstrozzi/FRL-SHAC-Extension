@@ -244,7 +244,7 @@ class SHAC_ALPHA_EMP:
             actions = self.actor(obs, False)
 
             # Clone the actor
-            actor_cloned = self.actor.detach().clone()
+            actor_cloned = copy.deepcopy(self.actor)
             # Perturbe the weight of the model with the noise
             with torch.no_grad():
                 for param in actor_cloned.parameters():
@@ -262,14 +262,13 @@ class SHAC_ALPHA_EMP:
 
                     param.add_(perturbation[lay])
 
-            actions_pert = actor_cloned(obs, True)
-            del actor_cloned
+                actions_pert = actor_cloned(obs, True)
+                # Get the perturbed result of the actor
+                _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
+                del actor_cloned
 
             # Get the NOT perturbed result
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions))
-
-            # Get the perturbed result of the actor
-            _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
 
             # Eval the 0th order gradient 
             with torch.no_grad():
