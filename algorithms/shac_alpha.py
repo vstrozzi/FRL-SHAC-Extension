@@ -255,7 +255,7 @@ class SHAC_ALPHA:
             # Get the jacobians of the actor over the parameters for obs, which has shape batch_size x self.num_actions x weight_size             
             jacobians, actions = jacrev(functional_call, argnums=1, has_aux=True)(self.actor, params, (obs, deterministic))
 
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions + perturbation))
+            obs, rew, done, extra_info = self.env.step(torch.tanh(actions))
 
            
             # Eval jacobian of actor multiplied by the perturbation direction, needed for 0-th order gradien
@@ -570,7 +570,7 @@ class SHAC_ALPHA:
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = 0*self.grad_1th_order[lay] + (1)*self.grad_0th_order[lay]
+                params[lay].grad = 1*self.grad_1th_order[lay] + (0)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
