@@ -255,7 +255,7 @@ class SHAC_ALPHA:
             # Get the jacobians of the actor over the parameters for obs, which has shape batch_size x self.num_actions x weight_size             
             jacobians, actions = jacrev(functional_call, argnums=1, has_aux=True)(self.actor, params, (obs, deterministic))
 
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions))
+            obs, rew, done, extra_info = self.env.step(torch.tanh(actions + perturbation))
 
            
             # Eval jacobian of actor multiplied by the perturbation direction, needed for 0-th order gradien
@@ -557,12 +557,6 @@ class SHAC_ALPHA:
             # -  1-th order gradient is more noisy (i.e. larger std)
             self.alpha_gamma = 1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)
 
-            # Log
-            print('alpha_info/B_iter', self.B, self.iter_count)
-            print('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
-            print('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
-            print('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
-
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
@@ -570,7 +564,7 @@ class SHAC_ALPHA:
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = 1*self.grad_1th_order[lay] + (0)*self.grad_0th_order[lay]
+                params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
@@ -714,10 +708,6 @@ class SHAC_ALPHA:
         np.save(open(os.path.join(self.log_dir, 'episode_loss_his.npy'), 'wb'), self.episode_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_discounted_loss_his.npy'), 'wb'), self.episode_discounted_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_length_his.npy'), 'wb'), self.episode_length_his)
-
-        print(rews)
-        print()
-        print(steps)
 
         # evaluate the final policy's performance
         self.run(self.num_envs)
