@@ -570,7 +570,7 @@ class SHAC_ALPHA:
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+                params[lay].grad = 0*self.grad_1th_order[lay] + (1)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
@@ -715,11 +715,9 @@ class SHAC_ALPHA:
         np.save(open(os.path.join(self.log_dir, 'episode_discounted_loss_his.npy'), 'wb'), self.episode_discounted_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_length_his.npy'), 'wb'), self.episode_length_his)
 
-
         print(rews)
         print()
         print(steps)
-
 
         # evaluate the final policy's performance
         self.run(self.num_envs)
