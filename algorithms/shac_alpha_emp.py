@@ -34,7 +34,7 @@ from utils.dataset import CriticDataset
 from utils.time_report import TimeReport
 from utils.average_meter import AverageMeter
 
-class SHAC_ALPHA:
+class SHAC_ALPHA_EMP:
     def __init__(self, cfg):
         env_fn = getattr(envs, cfg["params"]["diff_env"]["name"])
 
