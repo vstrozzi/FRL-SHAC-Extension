@@ -136,11 +136,29 @@ class SHAC_ALPHA_EMP:
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
         self.nr_query = 5
+        self.perturbation = TensorDict({}, device=self.device)
 
         # initalize 1th order gradient buffers
         self.grad_1th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_1th_order = TensorDict({}, device=self.device)
         self.grad_1th_order_std = torch.zeros(len(params), device=self.device)
+
+        params = dict(self.actor.named_parameters())
+        for lay in params.keys():   # init with 0 value
+            dim = (self.num_envs,) + ((1, ) * len(params[lay].shape))
+            self.grad_0th_order_env[lay] = params[lay].detach().clone().repeat(dim)
+            self.grad_0th_order_env[lay].fill_(0.)
+            self.grad_1th_order_env[lay] = params[lay].detach().clone().repeat(dim)
+            self.grad_1th_order_env[lay].fill_(0.)
+
+
+            self.perturbation[lay] = params[lay].detach().clone()
+            self.perturbation[lay].fill_(1.)
+
+            self.grad_0th_order[lay] = params[lay].detach().clone()
+            self.grad_0th_order[lay].fill_(0.)
+            self.grad_1th_order[lay] = params[lay].detach().clone()
+            self.grad_1th_order[lay].fill_(0.)
 
         # logging variables
         self.B = 0
@@ -201,16 +219,11 @@ class SHAC_ALPHA_EMP:
         """ 
         params = dict(self.actor.named_parameters())
         # fill gradients
-        perturbation = TensorDict({}, device=self.device)
         for lay in params.keys():   # init with 0 value
-            dim = (self.num_envs,) + ((1, ) * len(params[lay].shape))
-            self.grad_0th_order_env[lay] = params[lay].detach().clone().repeat(dim)
             self.grad_0th_order_env[lay].fill_(0.)
 
-            perturbation[lay] = params[lay].detach().clone()
-            perturbation[lay].fill_(1.)
+            self.perturbation[lay].fill_(1.)
 
-            self.grad_0th_order[lay] = params[lay].detach().clone()
             self.grad_0th_order[lay].fill_(0.) """
 
 
@@ -303,12 +316,11 @@ class SHAC_ALPHA_EMP:
                         nr_params = torch.numel(params[lay])
                         epsilon = torch.normal(0, 1, size=(1, nr_params)
                                         ).squeeze(0).reshape(params[lay].shape)
-                        # Reinit to 1 for reparam trick
-                        perturbation[lay].fill_(1.)
-                        # Reparametrization trick for gaussian noise
-                        perturbation[lay] = epsilon*self.sigma
 
-                        param.data += perturbation[lay]
+                        # Reparametrization trick for gaussian noise
+                        self.perturbation[lay] = epsilon*self.sigma
+
+                        param.data += self.perturbation[lay]
                     
                     # Get the perturbed actions of the actor
                     actions_pert = self.actor(obs, True)
@@ -325,7 +337,7 @@ class SHAC_ALPHA_EMP:
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
                         # Undo perturbation
-                        param.data -= perturbation[lay]
+                        param.data -= self.perturbation[lay]
             """
             # Reset state
             #self.env.reset_with_state(state_1, state_2)
@@ -505,11 +517,7 @@ class SHAC_ALPHA_EMP:
             params = dict(self.actor.named_parameters())
             # fill gradients
             for lay in params.keys():   # init with 0 value
-                dim = (self.num_envs,) + ((1, ) * len(params[lay].shape))
-                self.grad_1th_order_env[lay] = params[lay].detach().clone().repeat(dim)
                 self.grad_1th_order_env[lay].fill_(0.)
-
-                self.grad_1th_order[lay] = params[lay].detach().clone()
                 self.grad_1th_order[lay].fill_(0.)
 
 
