@@ -325,7 +325,7 @@ class SHAC_ALPHA_EMP:
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
                         # Undo perturbation
-                        param = param - perturbation[lay])
+                        param = param - perturbation[lay]
 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
