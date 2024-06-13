@@ -365,8 +365,11 @@ class SHAC_ALPHA_EMP:
         
         if self.ret_rms is not None:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
-            
+        
+        print('actor loss = {}'.format(self.actor_loss.shape))
+
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
+        print('actor loss = {}'.format(self.actor_loss.shape))
             
         # Evaluate mean of 0th order gradient
         for lay in self.grad_0th_order.keys(): 
