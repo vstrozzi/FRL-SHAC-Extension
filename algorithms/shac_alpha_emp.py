@@ -298,7 +298,7 @@ class SHAC_ALPHA_EMP:
             with torch.no_grad():
                 # Clone the actor
                 for _ in range(self.nr_query):
-                    for lay, param, in zip(params, self.actor.parameters()):
+                    for param, in self.actor.parameters():
                         # Add gaussian noise to parameters with fixed sigma
                         c = 0
                     """
