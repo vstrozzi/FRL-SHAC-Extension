@@ -297,7 +297,6 @@ class SHAC_ALPHA_EMP:
             # Perturbe the weight of the model with noise
             with torch.no_grad():
                 # Clone the actor
-            
                 for _ in range(self.nr_query):
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Add gaussian noise to parameters with fixed sigma
@@ -309,7 +308,7 @@ class SHAC_ALPHA_EMP:
                         # Reparametrization trick for gaussian noise
                         perturbation[lay] = epsilon*self.sigma
 
-                        param.add_(perturbation[lay])
+                        param = param + perturbation[lay]
                     
                     # Get the perturbed actions of the actor
                     actions_pert = self.actor(obs, True)
@@ -326,7 +325,7 @@ class SHAC_ALPHA_EMP:
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
                         # Undo perturbation
-                        param.add_(-perturbation[lay])
+                        param = param - perturbation[lay])
 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
