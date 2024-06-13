@@ -199,10 +199,7 @@ class SHAC_ALPHA_EMP:
         # init grad_0th_order and perturbation buffer
         params = dict(self.actor.named_parameters())
         # fill gradients
-        self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         perturbation = TensorDict({}, device=self.device)
-        self.grad_0th_order = TensorDict({}, device=self.device)
-        self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
         for lay in params.keys():   # init with 0 value
             dim = (self.num_envs,) + ((1, ) * len(params[lay].shape))
             self.grad_0th_order_env[lay] = params[lay].detach().clone().repeat(dim)
