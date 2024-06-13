@@ -293,14 +293,30 @@ class SHAC_ALPHA_EMP:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
 
-            
-            # Perturbe the weight of the model with noise
-            """
+            """ # Perturbe the weight of the model with noise
             with torch.no_grad():
-                # Clone the acto
+                # Clone the actor
+                for _ in range(self.nr_query):
+                    for lay, param, in zip(params, self.actor.parameters()):
                         # Add gaussian noise to parameters with fixed sigma
-                    c = 0
+                        nr_params = torch.numel(params[lay])
+                        epsilon = torch.normal(0, 1, size=(1, nr_params)
+                                        ).squeeze(0).reshape(params[lay].shape)
+                        # Reinit to 1 for reparam trick
+                        perturbation[lay].fill_(1.)
+                        # Reparametrization trick for gaussian noise
+                        perturbation[lay] = epsilon*self.sigma
+
+                        param.data += perturbation[lay]
                     
+                    # Get the perturbed actions of the actor
+                    actions_pert = self.actor(obs, True)
+                    # Reset state
+                    self.env.reset_with_state(state_1, state_2)
+                    # Query the environment
+
+                    _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
+
                     # Eval 0th order gradient
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Accumulate this value per environments of the gradient across the whole trajectory window
@@ -310,7 +326,6 @@ class SHAC_ALPHA_EMP:
                         # Undo perturbation
                         param.data -= perturbation[lay]
             """
-            
             # Reset state
             self.env.reset_with_state(state_1, state_2)
             
