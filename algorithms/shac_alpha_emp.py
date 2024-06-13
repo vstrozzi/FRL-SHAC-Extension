@@ -342,7 +342,7 @@ class SHAC_ALPHA_EMP:
             #self.env.reset_with_state(state_1, state_2)
             
             # Add a step to have environment with NOT perturbed
-            #_, _, _, _ = self.env.step(torch.tanh(actions))
+            _, _, _, _ = self.env.step(torch.tanh(actions))
             # compute gamma for next step
             gamma = gamma * self.gamma
 
@@ -520,7 +520,8 @@ class SHAC_ALPHA_EMP:
                 self.grad_1th_order[lay].fill_(0.)
 
 
-            # Eval the 1th order gradient per environment and then batch it            
+            # Eval the 1th order gradient per environment and then batch it
+            """            
             for env in range(self.num_envs):
                 self.actor_optimizer.zero_grad()
                 # Detach graph with last backward
@@ -528,6 +529,7 @@ class SHAC_ALPHA_EMP:
                 for lay in self.grad_1th_order.keys():   
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
                     self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
+            """
             del params
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
