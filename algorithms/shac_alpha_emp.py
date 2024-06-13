@@ -195,7 +195,7 @@ class SHAC_ALPHA_EMP:
         next_values = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         
         actor_loss_env = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
-        actor_loss_env_pert = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
+        actor_loss = torch.tensor(0., dtype = torch.float32, device = self.device)
 
         # init grad_0th_order and perturbation buffer
         params = dict(self.actor.named_parameters())
@@ -289,9 +289,11 @@ class SHAC_ALPHA_EMP:
 
             if i < self.steps_num - 1:
                 actor_loss_env[done_env_ids] = actor_loss_env[done_env_ids]  - rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]
+                actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
+                actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
 
             # Clone the actor
             actor_cloned = copy.deepcopy(self.actor)
@@ -362,12 +364,12 @@ class SHAC_ALPHA_EMP:
                         self.episode_gamma[done_env_id] = 1.
         del params
         actor_loss_env /= self.steps_num
+        actor_loss /= self.steps_num * self.num_envs
+
         
         if self.ret_rms is not None:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
-        
-        print('actor loss = {}'.format(actor_loss_env.shape))
-        print('actor loss = {}'.format(actor_loss_env))
+
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
             
         # Evaluate mean of 0th order gradient
@@ -384,7 +386,7 @@ class SHAC_ALPHA_EMP:
         
         self.step_count += self.steps_num * self.num_envs
 
-        return actor_loss_env, torch.mean(self.grad_0th_order_std, 0)
+        return actor_loss, actor_loss_env, torch.mean(self.grad_0th_order_std, 0)
     
     @torch.no_grad()
     def evaluate_policy(self, num_games, deterministic = False):
@@ -494,7 +496,7 @@ class SHAC_ALPHA_EMP:
             self.time_report.start_timer("compute actor loss")
 
             self.time_report.start_timer("forward simulation")
-            actor_loss_env, self.grad_0th_order_std_scal = self.compute_actor_loss()
+            actor_loss, actor_loss_env, self.grad_0th_order_std_scal = self.compute_actor_loss()
             self.time_report.end_timer("forward simulation")
 
             self.time_report.start_timer("backward simulation")
@@ -540,7 +542,6 @@ class SHAC_ALPHA_EMP:
 
             # Evaluate real loss
             self.actor_optimizer.zero_grad()
-            actor_loss = torch.mean(actor_loss_env)
             actor_loss.backward()
 
             # Give less weights to the 1th order gradient if
