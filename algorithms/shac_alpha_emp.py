@@ -296,7 +296,7 @@ class SHAC_ALPHA_EMP:
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
 
             
-            """ # Perturbe the weight of the model with noise
+            # Perturbe the weight of the model with noise
             with torch.no_grad():
                 # Clone the actor
                 actor_cloned = copy.deepcopy(self.actor)
@@ -328,7 +328,7 @@ class SHAC_ALPHA_EMP:
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
             
-                del actor_cloned """
+                del actor_cloned
 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
@@ -373,7 +373,6 @@ class SHAC_ALPHA_EMP:
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
         del params
-        
         actor_loss_env /= self.steps_num
         
         if self.ret_rms is not None:
@@ -521,7 +520,7 @@ class SHAC_ALPHA_EMP:
                 self.grad_1th_order[lay].fill_(0.)
 
 
-            # Eval the 1th order gradient per environment and then batch it
+            """ # Eval the 1th order gradient per environment and then batch it
             for env in range(self.num_envs):
                 self.actor_optimizer.zero_grad()
                 # Detach graph with last backward
@@ -529,7 +528,7 @@ class SHAC_ALPHA_EMP:
                 for lay in self.grad_1th_order.keys():   
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
                     self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
-
+ """
             del params
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
