@@ -296,7 +296,7 @@ class SHAC_ALPHA_EMP:
             # Perturbe the weight of the model with noise
             with torch.no_grad():
                 # Clone the actor
-                actor_cloned = copy.deepcopy(self.actor)
+                actor_cloned = copy.deepcopy(self.actor).to(self.device)
                 """ 
                 for _ in range(self.nr_query):
                     for lay, param, in zip(params, actor_cloned.parameters()):
