@@ -234,7 +234,7 @@ class SHAC_ALPHA_EMP:
             # Get the actions of the actor, which has shape num_env x self.num_actions             
             actions = self.actor(obs, deterministic = deterministic)
             # Save the step
-            #state_1, state_2 = self.env.get_state()
+            state_1, state_2 = self.env.get_state()
 
             # Get the NOT perturbed actions of the actor
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions))           
