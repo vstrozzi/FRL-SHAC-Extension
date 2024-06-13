@@ -534,12 +534,12 @@ class SHAC_ALPHA_EMP:
                 # Broacast
                 norm = torch.norm(self.grad_1th_order[lay] - self.grad_1th_order_env[lay], p=2)
                 self.grad_1th_order_std[idx] = self.grad_1th_order_std[idx] +  1/(self.num_envs - 1)*(norm)**2
-                self.B += torch.norm(self.grad_1th_order[lay] - self.grad_0th_order[lay], p=2).detach().clone().item()
+                self.B += torch.norm(self.grad_1th_order[lay] - self.grad_0th_order[lay], p=2).detach().clone()
                 c += 1
 
             self.B = self.B/c
 
-            self.grad_1th_order_std_scal = torch.mean(self.grad_1th_order_std).detach().clone().item()
+            self.grad_1th_order_std_scal = torch.mean(self.grad_1th_order_std).detach().clone()
 
             # Evaluate real loss
             self.actor_optimizer.zero_grad()
@@ -549,7 +549,7 @@ class SHAC_ALPHA_EMP:
             # Give less weights to the 1th order gradient if
             #  - there's a large difference between 1th order and 0th order gradients norm B (i.e. B large, empirical discontinuities bias in this case)
             # -  1-th order gradient is more noisy (i.e. larger std)
-            self.alpha_gamma = (1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff))
+            self.alpha_gamma = (1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)).detach().clone()
 
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
