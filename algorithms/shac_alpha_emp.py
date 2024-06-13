@@ -558,7 +558,7 @@ class SHAC_ALPHA_EMP:
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+                params[lay].grad = 1*self.grad_1th_order[lay] + (0)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
             del params
 
