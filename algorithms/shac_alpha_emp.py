@@ -564,7 +564,6 @@ class SHAC_ALPHA_EMP:
             print('grad_1th_iter:', self.grad_1th_order_std_scal)
             print('grad_0th_iter:', self.grad_0th_order_std_scal)
             print('alpha_gamma_iter:', self.alpha_gamma)
-
             # Update parameters
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
                 param.grad *= self.alpha_gamma
@@ -583,6 +582,8 @@ class SHAC_ALPHA_EMP:
                     raise ValueError
 
             self.time_report.end_timer("compute actor loss")
+            
+            torch.cuda.empty_cache() 
 
             return actor_loss
 
