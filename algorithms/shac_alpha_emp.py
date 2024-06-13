@@ -303,10 +303,7 @@ class SHAC_ALPHA_EMP:
                         nr_params = torch.numel(params[lay])
                         epsilon = torch.normal(0, 1, size=(1, nr_params)
                                         ).squeeze(0).reshape(params[lay].shape)
-                        # Reinit to 1 for reparam trick
-                        perturbation[lay].fill_(1.)
-                        # Reparametrization trick for gaussian noise
-                        perturbation[lay] = epsilon*self.sigma
+
 
                     """
                     # Eval 0th order gradient
