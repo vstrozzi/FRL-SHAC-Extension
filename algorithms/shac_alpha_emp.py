@@ -521,14 +521,15 @@ class SHAC_ALPHA_EMP:
 
 
             # Eval the 1th order gradient per environment and then batch it
-"""             for env in range(self.num_envs):
+            """             
+            for env in range(self.num_envs):
                 self.actor_optimizer.zero_grad()
                 # Detach graph with last backward
                 actor_loss_env[env].backward(retain_graph=True)
                 for lay in self.grad_1th_order.keys():   
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
                     self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
-                     """
+            """
             del params
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
