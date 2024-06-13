@@ -294,7 +294,7 @@ class SHAC_ALPHA_EMP:
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
-                
+
             # Clone the actor
             actor_cloned = copy.deepcopy(self.actor)
             # Perturbe the weight of the model with noise
@@ -318,7 +318,7 @@ class SHAC_ALPHA_EMP:
                     _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
 
                     rew_acc_pert = rew_acc[i, :] + gamma * rew_pert
-
+                    actor_loss_env_pert = actor_loss_env
                     if i < self.steps_num - 1:
                         actor_loss_env_pert[done_env_ids] = actor_loss_env_pert[done_env_ids] - rew_acc_pert[done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]
                     else:
@@ -328,7 +328,7 @@ class SHAC_ALPHA_EMP:
                     # Eval 0th order gradient
                     for lay in params:   # init with 0 value
                         # Accumulate this value per environments of the gradient across the whole trajectory window
-                        grad_per_env = 1./self.sigma*((actor_loss_env_pert - actor_loss_env)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
+                        grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]
             
             del actor_cloned
@@ -567,7 +567,7 @@ class SHAC_ALPHA_EMP:
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+                params[lay].grad = 0*self.grad_1th_order[lay] + (1)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
             del params
 
