@@ -264,10 +264,7 @@ class SHAC_ALPHA_EMP:
             del actor_cloned
 
             # Get the NOT perturbed actions of the actor
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions))
-
-            print(torch.norm(rew - rew_pert))
-                    
+            obs, rew, done, extra_info = self.env.step(torch.tanh(actions))                    
 
             with torch.no_grad():
                 raw_rew = rew.clone()
@@ -566,7 +563,7 @@ class SHAC_ALPHA_EMP:
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+                params[lay].grad = 0*self.grad_1th_order[lay] + (1)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
             del params
 
