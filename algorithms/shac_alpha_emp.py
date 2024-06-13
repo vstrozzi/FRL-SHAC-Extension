@@ -131,6 +131,7 @@ class SHAC_ALPHA_EMP:
             self.save('init_policy')
     
         # initialize Oth order gradient buffers
+        params = dict(self.actor.named_parameters()).keys()
         self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
