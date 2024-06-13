@@ -291,11 +291,10 @@ class SHAC_ALPHA_EMP:
 
             if i < self.steps_num - 1:
                 actor_loss_env[done_env_ids] = actor_loss_env[done_env_ids]  - rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]
-                actor_loss_env_pert[done_env_ids] = actor_loss_env_pert[done_env_ids] - rew_acc_pert[done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
-                actor_loss_env_pert = actor_loss_env_pert - rew_acc_pert - self.gamma * gamma * next_values[i + 1, :]
+                
             # Clone the actor
             actor_cloned = copy.deepcopy(self.actor)
             # Perturbe the weight of the model with noise
@@ -568,7 +567,7 @@ class SHAC_ALPHA_EMP:
 
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
-                params[lay].grad = 0*self.grad_1th_order[lay] + (1)*self.grad_0th_order[lay]
+                params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
             del params
 
