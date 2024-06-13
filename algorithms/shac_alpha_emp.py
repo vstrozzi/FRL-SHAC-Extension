@@ -331,7 +331,8 @@ class SHAC_ALPHA_EMP:
 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
-            # Add a step to have environment with not perturbed
+            
+            # Add a step to have environment with NOT perturbed
             _, _, _, _ = self.env.step(torch.tanh(actions))     
             # compute gamma for next step
             gamma = gamma * self.gamma
@@ -534,11 +535,15 @@ class SHAC_ALPHA_EMP:
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
             self.B = 0
+            c = 0
             for idx, lay in enumerate(self.grad_0th_order.keys()):   
                 # Broacast
                 norm = torch.norm(self.grad_1th_order[lay] - self.grad_1th_order_env[lay], p=2)
                 self.grad_1th_order_std[idx] = self.grad_1th_order_std[idx] +  1/(self.num_envs - 1)*(norm)**2
                 self.B += torch.norm(self.grad_1th_order[lay] - self.grad_0th_order[lay], p=2)
+                c += 1
+
+            self.B = self.B/c
             # FREE MEMORY
             del self.grad_1th_order_env
 
@@ -566,8 +571,8 @@ class SHAC_ALPHA_EMP:
 
             # Update parameters
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= 0
-                param.grad += 1*self.grad_0th_order[lay]
+                param.grad *= self.alpha_gamma
+                param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
