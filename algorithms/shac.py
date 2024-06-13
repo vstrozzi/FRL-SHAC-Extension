@@ -346,8 +346,6 @@ class SHAC:
 
     @torch.no_grad()
     def compute_target_values(self):
-        print(self.rew_buf)
-        print(self.next_values)
         if self.critic_method == 'one-step':
             self.target_values = self.rew_buf + self.gamma * self.next_values
         elif self.critic_method == 'td-lambda':

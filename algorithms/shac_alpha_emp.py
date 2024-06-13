@@ -566,8 +566,8 @@ class SHAC_ALPHA_EMP:
 
             # Update parameters
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= 1
-                param.grad += (0)*self.grad_0th_order[lay]
+                param.grad *= 0
+                param.grad += 1*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
