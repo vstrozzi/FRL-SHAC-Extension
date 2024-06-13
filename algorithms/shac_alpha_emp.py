@@ -117,11 +117,10 @@ class SHAC_ALPHA_EMP:
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
-        self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLPALPHAEMP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
+        self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
         actor_fn = getattr(models.actor, self.actor_name)
         self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], device = self.device)
-
         critic_fn = getattr(models.critic, self.critic_name)
         self.critic = critic_fn(self.num_obs, cfg['params']['network'], device = self.device)
         self.all_params = list(self.actor.parameters()) + list(self.critic.parameters())
@@ -236,9 +235,8 @@ class SHAC_ALPHA_EMP:
             # Collect data for critic training
             with torch.no_grad():
                 self.obs_buf[i] = obs.clone()   
-                                    
             # Get the actions of the actor, which has shape num_env x self.num_actions             
-            actions = self.actor(obs, False)
+            actions = self.actor(obs, deterministic = deterministic)
             # Get the NOT perturbed actions of the actor
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions))                    
 
