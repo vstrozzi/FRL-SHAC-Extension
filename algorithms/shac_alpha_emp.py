@@ -234,7 +234,7 @@ class SHAC_ALPHA_EMP:
             # Get the actions of the actor, which has shape num_env x self.num_actions             
             actions = self.actor(obs, deterministic = deterministic)
             # Save the step
-            state_1, state_2 = self.env.get_state()
+            #state_1, state_2 = self.env.get_state()
 
             # Get the NOT perturbed actions of the actor
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions))           
@@ -293,7 +293,7 @@ class SHAC_ALPHA_EMP:
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
 
             
-            # Perturbe the weight of the model with noise
+            """ # Perturbe the weight of the model with noise
             with torch.no_grad():
                 # Clone the actor
                 actor_cloned = copy.deepcopy(self.actor)
@@ -331,7 +331,7 @@ class SHAC_ALPHA_EMP:
             self.env.reset_with_state(state_1, state_2)
             
             # Add a step to have environment with NOT perturbed
-            _, _, _, _ = self.env.step(torch.tanh(actions))     
+            _, _, _, _ = self.env.step(torch.tanh(actions))   """   
             # compute gamma for next step
             gamma = gamma * self.gamma
 
