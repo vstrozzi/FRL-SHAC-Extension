@@ -308,7 +308,7 @@ class SHAC_ALPHA_EMP:
                         # Reparametrization trick for gaussian noise
                         perturbation[lay] = epsilon*self.sigma
 
-                        #param.data += perturbation[lay]
+                        param.data += perturbation[lay]
                     
                     # Get the perturbed actions of the actor
                     actions_pert = self.actor(obs, True)
