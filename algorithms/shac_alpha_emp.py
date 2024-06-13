@@ -558,7 +558,7 @@ class SHAC_ALPHA_EMP:
 
             # Update parameters
             self.actor_optimizer.zero_grad()
-            for param in self.actor.parameters():
+            for param, lay in zip(self.actor.parameters(), self.actor.named_parameters().keys()):
                 param.grad = 1*self.grad_1th_order[lay] + (0)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
