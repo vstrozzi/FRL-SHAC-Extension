@@ -198,6 +198,7 @@ class SHAC_ALPHA_EMP:
         actor_loss_env = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
 
         # init grad_0th_order and perturbation buffer
+        """ 
         params = dict(self.actor.named_parameters())
         # fill gradients
         perturbation = TensorDict({}, device=self.device)
@@ -210,7 +211,7 @@ class SHAC_ALPHA_EMP:
             perturbation[lay].fill_(1.)
 
             self.grad_0th_order[lay] = params[lay].detach().clone()
-            self.grad_0th_order[lay].fill_(0.)
+            self.grad_0th_order[lay].fill_(0.) """
 
 
         with torch.no_grad():
@@ -327,10 +328,10 @@ class SHAC_ALPHA_EMP:
                         param.data -= perturbation[lay]
             """
             # Reset state
-            self.env.reset_with_state(state_1, state_2)
+            #self.env.reset_with_state(state_1, state_2)
             
             # Add a step to have environment with NOT perturbed
-            _, _, _, _ = self.env.step(torch.tanh(actions))
+            #_, _, _, _ = self.env.step(torch.tanh(actions))
             # compute gamma for next step
             gamma = gamma * self.gamma
 
@@ -368,7 +369,7 @@ class SHAC_ALPHA_EMP:
                         self.episode_discounted_loss[done_env_id] = 0.
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
-        del params
+        #del params
         actor_loss_env /= self.steps_num
         
         if self.ret_rms is not None:
