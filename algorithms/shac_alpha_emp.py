@@ -295,10 +295,11 @@ class SHAC_ALPHA_EMP:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
 
-            # Clone the actor
-            actor_cloned = copy.deepcopy(self.actor)
+            
             # Perturbe the weight of the model with noise
             with torch.no_grad():
+                # Clone the actor
+                actor_cloned = copy.deepcopy(self.actor)
                 for _ in range(self.nr_query):
                     for lay, param, in zip(params, actor_cloned.parameters()):
                         # Add gaussian noise to parameters with fixed sigma
@@ -327,7 +328,7 @@ class SHAC_ALPHA_EMP:
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
             
-            del actor_cloned
+                del actor_cloned
 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
@@ -390,6 +391,7 @@ class SHAC_ALPHA_EMP:
         
         self.step_count += self.steps_num * self.num_envs
 
+        print(torch.cuda.memory_allocated() / torch.cuda.max_memory_allocated())
         return actor_loss_env, torch.mean(self.grad_0th_order_std, 0)
     
     @torch.no_grad()
