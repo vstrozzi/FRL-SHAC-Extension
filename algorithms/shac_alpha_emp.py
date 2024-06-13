@@ -216,7 +216,6 @@ class SHAC_ALPHA_EMP:
         actor_loss_env = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
 
         # init grad_0th_order and perturbation buffer
-        """ 
         params = dict(self.actor.named_parameters())
         # fill gradients
         for lay in params.keys():   # init with 0 value
@@ -224,7 +223,7 @@ class SHAC_ALPHA_EMP:
 
             self.perturbation[lay].fill_(1.)
 
-            self.grad_0th_order[lay].fill_(0.) """
+            self.grad_0th_order[lay].fill_(0.)
 
 
         with torch.no_grad():
@@ -521,7 +520,7 @@ class SHAC_ALPHA_EMP:
                 self.grad_1th_order[lay].fill_(0.)
 
 
-            """ # Eval the 1th order gradient per environment and then batch it
+            # Eval the 1th order gradient per environment and then batch it
             for env in range(self.num_envs):
                 self.actor_optimizer.zero_grad()
                 # Detach graph with last backward
@@ -529,7 +528,6 @@ class SHAC_ALPHA_EMP:
                 for lay in self.grad_1th_order.keys():   
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
                     self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
- """
             del params
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
