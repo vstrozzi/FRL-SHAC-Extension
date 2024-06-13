@@ -295,10 +295,12 @@ class SHAC_ALPHA_EMP:
 
             
             # Perturbe the weight of the model with noise
+            """
             with torch.no_grad():
-                # Clone the actor
+                # Clone the acto
                         # Add gaussian noise to parameters with fixed sigma
-                    """
+                    c = 0
+                    
                     # Eval 0th order gradient
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Accumulate this value per environments of the gradient across the whole trajectory window
@@ -307,7 +309,7 @@ class SHAC_ALPHA_EMP:
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
                         # Undo perturbation
                         param.data -= perturbation[lay]
-                    """
+            """
             
             # Reset state
             self.env.reset_with_state(state_1, state_2)
