@@ -238,11 +238,8 @@ class SHAC_ALPHA_EMP:
             actions = self.actor(obs, deterministic = deterministic)
             # Save the step
             state_1, state_2 = self.env.get_state()
-            # Get the NOT perturbed actions of the actor
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions))           
 
-            # Reset state
-            self.env.reset_with_state(state_1, state_2)
+            # Get the NOT perturbed actions of the actor
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions))           
 
             with torch.no_grad():
@@ -317,17 +314,25 @@ class SHAC_ALPHA_EMP:
                     
                     # Get the perturbed actions of the actor
                     actions_pert = actor_cloned(obs, True)
+                    # Reset state
+                    self.env.reset_with_state(state_1, state_2)
                     # Query the environment
-                    #_, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
 
-                    """ # Eval 0th order gradient
+                    _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
+
+                    # Eval 0th order gradient
                     for lay in params:   # init with 0 value
                         # Accumulate this value per environments of the gradient across the whole trajectory window
                         grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
                         normalize = self.num_envs*self.steps_num*self.nr_query
-                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize """
+                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
             
             del actor_cloned
+
+            # Reset state
+            self.env.reset_with_state(state_1, state_2)
+            # Add a step to have environment with not perturbed
+            _, _, _, _ = self.env.step(torch.tanh(actions))     
             # compute gamma for next step
             gamma = gamma * self.gamma
 
@@ -560,9 +565,9 @@ class SHAC_ALPHA_EMP:
             print('alpha_gamma_iter:', self.alpha_gamma)
 
             # Update parameters
-            self.actor_optimizer.zero_grad()
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad = 1*self.grad_1th_order[lay] + (0)*self.grad_0th_order[lay]
+                param.grad *= 1
+                param.grad += (0)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
