@@ -332,9 +332,9 @@ class SHAC_ALPHA_EMP:
                     # Eval 0th order gradient
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Accumulate this value per environments of the gradient across the whole trajectory window
-                        grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
+                        grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(self.perturbation[lay].shape)))
                         normalize = self.num_envs*self.steps_num*self.nr_query
-                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
+                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*self.perturbation[lay]/normalize
                         # Undo perturbation
                         param.data -= self.perturbation[lay]
             # Reset state
