@@ -321,7 +321,8 @@ class SHAC_ALPHA_EMP:
                     for lay in params:   # init with 0 value
                         # Accumulate this value per environments of the gradient across the whole trajectory window
                         grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
-                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/self.nr_query
+                        normalize = self.num_envs*self.steps_num*self.nr_query
+                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
             
             del actor_cloned
             # compute gamma for next step
@@ -372,8 +373,6 @@ class SHAC_ALPHA_EMP:
         # Evaluate mean of 0th order gradient
         for lay in self.grad_0th_order.keys(): 
             self.grad_0th_order[lay] = torch.sum(self.grad_0th_order_env[lay], 0)
-            # Normalize by the number of environments, steps and #queries
-            self.grad_0th_order[lay] /= self.num_envs*self.steps_num
 
         # Eval std of 0th order gradient
         for idx, lay in enumerate(self.grad_0th_order.keys()): 
