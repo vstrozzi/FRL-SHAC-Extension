@@ -312,14 +312,14 @@ class SHAC_ALPHA_EMP:
                     # Get the perturbed actions of the actor
                     actions_pert = actor_cloned(obs, True)
                     # Query the environment
-                    _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
+                    #_, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
 
-                    # Eval 0th order gradient
+                    """ # Eval 0th order gradient
                     for lay in params:   # init with 0 value
                         # Accumulate this value per environments of the gradient across the whole trajectory window
                         grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
                         normalize = self.num_envs*self.steps_num*self.nr_query
-                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
+                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize """
             
             del actor_cloned
             # compute gamma for next step
@@ -431,8 +431,6 @@ class SHAC_ALPHA_EMP:
 
     @torch.no_grad()
     def compute_target_values(self):
-        print(self.rew_buf)
-        print(self.next_values)
         if self.critic_method == 'one-step':
             self.target_values = self.rew_buf + self.gamma * self.next_values
         elif self.critic_method == 'td-lambda':
