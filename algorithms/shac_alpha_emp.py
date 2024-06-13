@@ -297,10 +297,9 @@ class SHAC_ALPHA_EMP:
             # Perturbe the weight of the model with noise
             with torch.no_grad():
                 # Clone the actor
-                actor_cloned = copy.deepcopy(self.actor).to(self.device)
-                """ 
+            
                 for _ in range(self.nr_query):
-                    for lay, param, in zip(params, actor_cloned.parameters()):
+                    for lay, param, in zip(params, self.actor.parameters()):
                         # Add gaussian noise to parameters with fixed sigma
                         nr_params = torch.numel(params[lay])
                         epsilon = torch.normal(0, 1, size=(1, nr_params)
@@ -313,7 +312,7 @@ class SHAC_ALPHA_EMP:
                         param.add_(perturbation[lay])
                     
                     # Get the perturbed actions of the actor
-                    actions_pert = actor_cloned(obs, True)
+                    actions_pert = self.actor(obs, True)
                     # Reset state
                     self.env.reset_with_state(state_1, state_2)
                     # Query the environment
@@ -321,16 +320,14 @@ class SHAC_ALPHA_EMP:
                     _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
 
                     # Eval 0th order gradient
-                    for lay in params:   # init with 0 value
+                    for lay, param, in zip(params, self.actor.parameters()):
                         # Accumulate this value per environments of the gradient across the whole trajectory window
                         grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
-                """
+                        # Undo perturbation
+                        param.add_(-perturbation[lay])
 
-                del actor_cloned
-                gc.collect()
-                torch.cuda.empty_cache() 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
             
