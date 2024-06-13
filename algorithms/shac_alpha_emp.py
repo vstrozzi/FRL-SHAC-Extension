@@ -24,6 +24,7 @@ import yaml
 import dflex as df
 
 import envs
+import gc
 import models.actor
 import models.critic
 from utils.common import *
@@ -328,6 +329,8 @@ class SHAC_ALPHA_EMP:
                 """
 
                 del actor_cloned
+                gc.collect()
+                torch.cuda.empty_cache() 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
             
