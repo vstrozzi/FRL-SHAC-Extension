@@ -339,7 +339,7 @@ class SHAC_ALPHA_EMP:
                         param.data -= self.perturbation[lay]
             """
             # Reset state
-            #self.env.reset_with_state(state_1, state_2)
+            self.env.reset_with_state(state_1, state_2)
             
             # Add a step to have environment with NOT perturbed
             #_, _, _, _ = self.env.step(torch.tanh(actions))
