@@ -559,6 +559,11 @@ class SHAC_ALPHA_EMP:
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
+            print('B_iter:', self.B)
+            print('grad_1th_iter:', self.grad_1th_order_std_scal)
+            print('grad_0th_iter:', self.grad_0th_order_std_scal)
+            print('alpha_gamma_iter:', self.alpha_gamma)
+
             params = dict(self.actor.named_parameters())
             for lay in self.grad_0th_order.keys():   
                 params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
