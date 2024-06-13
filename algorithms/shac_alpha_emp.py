@@ -308,7 +308,7 @@ class SHAC_ALPHA_EMP:
                         # Reparametrization trick for gaussian noise
                         perturbation[lay] = epsilon*self.sigma
 
-                        param.data += perturbation[lay]
+                        #param.data += perturbation[lay]
                     
                     # Get the perturbed actions of the actor
                     actions_pert = self.actor(obs, True)
@@ -318,7 +318,7 @@ class SHAC_ALPHA_EMP:
 
                     _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
                     # Eval 0th order gradient
-                    for lay, param, in zip(params, self.actor.parameters()):
+                    #for lay, param, in zip(params, self.actor.parameters()):
                         """
 
                         # Accumulate this value per environments of the gradient across the whole trajectory window
@@ -328,7 +328,7 @@ class SHAC_ALPHA_EMP:
                         # Undo perturbation
                         """
 
-                        param.data -= perturbation[lay]
+                        #param.data -= perturbation[lay]
             
             # Reset state
             self.env.reset_with_state(state_1, state_2)
