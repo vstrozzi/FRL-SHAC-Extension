@@ -296,10 +296,10 @@ class SHAC_ALPHA_EMP:
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
 
             
-            # Perturbe the weight of the model with noise
+            """ # Perturbe the weight of the model with noise
             with torch.no_grad():
                 # Clone the actor
-                actor_cloned = self.actor
+                actor_cloned = copy.deepcopy(self.actor)
                 for _ in range(self.nr_query):
                     for lay, param, in zip(params, actor_cloned.parameters()):
                         # Add gaussian noise to parameters with fixed sigma
@@ -328,6 +328,7 @@ class SHAC_ALPHA_EMP:
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
             
+                del actor_cloned """
 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
@@ -372,7 +373,7 @@ class SHAC_ALPHA_EMP:
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
         del params
-
+        
         actor_loss_env /= self.steps_num
         
         if self.ret_rms is not None:
