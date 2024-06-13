@@ -131,7 +131,6 @@ class SHAC_ALPHA_EMP:
             self.save('init_policy')
     
         # initialize Oth order gradient buffers
-        params = dict(self.actor.named_parameters()).keys()
         self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
@@ -558,7 +557,7 @@ class SHAC_ALPHA_EMP:
 
             # Update parameters
             self.actor_optimizer.zero_grad()
-            for param, lay in zip(self.actor.parameters(), self.actor.named_parameters().keys()):
+            for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
                 param.grad = 1*self.grad_1th_order[lay] + (0)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
