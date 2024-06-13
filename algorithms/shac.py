@@ -291,7 +291,7 @@ class SHAC:
 
         if self.ret_rms is not None:
             actor_loss = actor_loss * torch.sqrt(ret_var + 1e-6)
-                    print('actor loss = {}'.format(actor_loss))
+        print('actor loss = {}'.format(actor_loss))
 
         self.actor_loss = actor_loss.detach().cpu().item()
             
