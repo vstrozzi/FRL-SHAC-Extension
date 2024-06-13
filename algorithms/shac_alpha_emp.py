@@ -308,7 +308,7 @@ class SHAC_ALPHA_EMP:
                         # Reparametrization trick for gaussian noise
                         perturbation[lay] = epsilon*self.sigma
 
-                        param.data += perturbation[lay]
+                        param.data += perturbation[lay].detach().clone().
                     
                     # Get the perturbed actions of the actor
                     actions_pert = self.actor(obs, True)
@@ -325,7 +325,7 @@ class SHAC_ALPHA_EMP:
                         normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]/normalize
                         # Undo perturbation
-                        param.data -= perturbation[lay]
+                        param.data -= perturbation[lay].detach().clone()
 
             # Reset state
             self.env.reset_with_state(state_1, state_2)
