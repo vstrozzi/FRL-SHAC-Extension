@@ -549,7 +549,7 @@ class SHAC_ALPHA_EMP:
             # Give less weights to the 1th order gradient if
             #  - there's a large difference between 1th order and 0th order gradients norm B (i.e. B large, empirical discontinuities bias in this case)
             # -  1-th order gradient is more noisy (i.e. larger std)
-            self.alpha_gamma = (1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)).detach().clone().item()
+            self.alpha_gamma = (1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff))
 
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
