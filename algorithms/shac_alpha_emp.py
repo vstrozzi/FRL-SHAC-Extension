@@ -387,9 +387,6 @@ class SHAC_ALPHA_EMP:
         for idx, lay in enumerate(self.grad_0th_order.keys()): 
             norm = torch.norm(self.grad_0th_order[lay] - self.grad_0th_order_env[lay], p=2)    
             self.grad_0th_order_std[idx] +=  1/(self.num_envs - 1)*(norm)**2
-
-        # FREE MEMORY
-        del self.grad_0th_order_env
         
         self.step_count += self.steps_num * self.num_envs
 
@@ -544,8 +541,6 @@ class SHAC_ALPHA_EMP:
                 c += 1
 
             self.B = self.B/c
-            # FREE MEMORY
-            del self.grad_1th_order_env
 
             self.grad_1th_order_std_scal = torch.mean(self.grad_1th_order_std)
 
