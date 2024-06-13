@@ -342,7 +342,11 @@ class SHAC_ALPHA_EMP:
             self.env.reset_with_state(state_1, state_2)
             
             # Add a step to have environment with NOT perturbed
-            self.env.step(torch.tanh(actions))
+            mem1, mem2, mem3, mem4 = self.env.step(torch.tanh(actions))
+            del mem1
+            del mem2
+            del mem3
+            del mem4
             # compute gamma for next step
             gamma = gamma * self.gamma
 
