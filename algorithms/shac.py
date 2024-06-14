@@ -287,11 +287,12 @@ class SHAC:
                         self.episode_discounted_loss[done_env_id] = 0.
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
+
         actor_loss /= self.steps_num * self.num_envs
 
         if self.ret_rms is not None:
             actor_loss = actor_loss * torch.sqrt(ret_var + 1e-6)
-
+            
         self.actor_loss = actor_loss.detach().cpu().item()
             
         self.step_count += self.steps_num * self.num_envs
