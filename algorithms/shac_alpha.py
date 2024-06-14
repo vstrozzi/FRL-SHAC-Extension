@@ -114,7 +114,7 @@ class SHAC_ALPHA:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.01 #cfg['params']['config'].get('sigma', 0.1)
+        self.sigma = 0.1 #cfg['params']['config'].get('sigma', 0.1)
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
@@ -136,7 +136,7 @@ class SHAC_ALPHA:
         self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
-        self.nr_query = 50
+        self.nr_query = 5
 
         # initalize 1th order gradient buffers
         self.grad_1th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
@@ -318,7 +318,7 @@ class SHAC_ALPHA:
                         if len(jacobians[lay].shape) > 3:    
                             jacob_actor_permut = jacob_actor_permut.view(self.num_envs, jacobians[lay].shape[-2], jacobians[lay].shape[-1])
 
-                        grad_per_env = 1./self.sigma*((rew_pert - rew).view(*rew.shape, *([1] * (len(jacob_actor_permut.shape) - 1))))
+                        grad_per_env = 1./(self.sigma**self.sigma)*((rew_pert - rew).view(*rew.shape, *([1] * (len(jacob_actor_permut.shape) - 1))))
                         # Accumulate this value over the environments of the jacobians
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*jacob_actor_permut/normalize
 
