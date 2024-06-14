@@ -292,11 +292,13 @@ class SHAC_ALPHA:
             rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
 
             if i < self.steps_num - 1:
-                a = 0
+                actor_loss_env[done_env_ids] = actor_loss_env[done_env_ids] + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids])
+                actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
+
             else:
                 # terminate all envs at the end of optimization iteration
-                actor_loss_env = - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
-                actor_loss = (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
+                actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
+                actor_loss = actor_loss + (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
 
             """ # Perturbe the actions of the model with noise
             with torch.no_grad():
@@ -369,6 +371,8 @@ class SHAC_ALPHA:
                         self.episode_gamma[done_env_id] = 1.
 
         actor_loss_env /= self.steps_num 
+        actor_loss /= self.steps_num * self.num_envs
+
         
         if self.ret_rms is not None:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
