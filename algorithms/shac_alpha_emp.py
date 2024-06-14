@@ -24,7 +24,6 @@ import yaml
 import dflex as df
 
 import envs
-import gc
 import models.actor
 import models.critic
 from utils.common import *
@@ -122,6 +121,7 @@ class SHAC_ALPHA_EMP:
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
         actor_fn = getattr(models.actor, self.actor_name)
         self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], device = self.device)
+
         critic_fn = getattr(models.critic, self.critic_name)
         self.critic = critic_fn(self.num_obs, cfg['params']['network'], device = self.device)
         self.all_params = list(self.actor.parameters()) + list(self.critic.parameters())
@@ -249,10 +249,9 @@ class SHAC_ALPHA_EMP:
             actions = self.actor(obs, deterministic = deterministic)
             # Save the step
             state_1, state_2 = self.env.get_state()
-
             # Get the NOT perturbed actions of the actor
             obs, rew, done, extra_info = self.env.step(torch.tanh(actions))           
-
+            
             with torch.no_grad():
                 raw_rew = rew.clone()
             
@@ -305,10 +304,9 @@ class SHAC_ALPHA_EMP:
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
-
+                
             # Perturbe the weight of the model with noise
             with torch.no_grad():
-                # Clone the actor
                 for _ in range(self.nr_query):
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Add gaussian noise to parameters with fixed sigma
@@ -330,10 +328,10 @@ class SHAC_ALPHA_EMP:
                     _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
 
                     # Eval 0th order gradient
+                    normalize = self.num_envs*self.steps_num*self.nr_query
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Accumulate this value per environments of the gradient across the whole trajectory window
                         grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(self.perturbation[lay].shape)))
-                        normalize = self.num_envs*self.steps_num*self.nr_query
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*self.perturbation[lay]/normalize
                         # Undo perturbation
                         param.data -= self.perturbation[lay]
@@ -379,7 +377,7 @@ class SHAC_ALPHA_EMP:
                         self.episode_discounted_loss[done_env_id] = 0.
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
-        #del params
+
         actor_loss_env /= self.steps_num
         
         if self.ret_rms is not None:
@@ -580,7 +578,6 @@ class SHAC_ALPHA_EMP:
                     raise ValueError
 
             self.time_report.end_timer("compute actor loss")
-            
             return actor_loss
 
         # main training process
@@ -712,7 +709,6 @@ class SHAC_ALPHA_EMP:
         print(rews)
         print()
         print(steps)
-
         # evaluate the final policy's performance
         self.run(self.num_envs)
 
