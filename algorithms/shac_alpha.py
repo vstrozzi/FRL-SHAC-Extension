@@ -511,8 +511,9 @@ class SHAC_ALPHA:
                 actor_loss_env[env].backward(retain_graph=True)
                 for lay in self.grad_1th_order.keys():   
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
-                    self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs """
-            del params
+                    self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
+             """
+             del params
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
             self.B = 0
@@ -548,8 +549,8 @@ class SHAC_ALPHA:
             print('grad_0th_iter:', self.grad_0th_order_std_scal)
             print('alpha_gamma_iter:', self.alpha_gamma)
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= 1
-                param.grad += 0*self.grad_0th_order[lay]
+                param.grad *= 0
+                param.grad += self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
