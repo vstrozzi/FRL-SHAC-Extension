@@ -292,9 +292,7 @@ class SHAC_ALPHA:
             rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
 
             if i < self.steps_num - 1:
-                actor_loss_env[done_env_ids] = actor_loss_env[done_env_ids] + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids])
-                actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
-
+                a = 0
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
@@ -370,12 +368,13 @@ class SHAC_ALPHA:
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
 
+        actor_loss_env /= self.steps_num 
         
         if self.ret_rms is not None:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
 
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
-        print("We have self.actor_loss = ", actor_loss_env.sum()/(self.num_envs*self.steps_num))
+        print("We have self.actor_loss = ", actor_loss_env.sum()/(self.num_envs)
         print("we have actor_loss = ", actor_loss)
         # Evaluate mean of 0th order gradient
         for lay in self.grad_0th_order.keys(): 
