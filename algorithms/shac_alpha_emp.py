@@ -328,13 +328,27 @@ class SHAC_ALPHA_EMP:
                     _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
 
                     # Eval 0th order gradient
-                    normalize = self.num_envs*self.steps_num*self.nr_query
+                    for lay, param, in zip(params, self.actor.parameters()):
+                        # Move in antysimm direction
+                        param.data -= 2*self.perturbation[lay]
+
+                    # Get the perturbed actions of the actor in the antysimm
+                    actions_pert = self.actor(obs, True)
+                    # Reset state
+                    self.env.reset_with_state(state_1, state_2)
+                    # Query the environment
+
+                    _, rew_pert_ant, _, _ = self.env.step(torch.tanh(actions_pert))
+
+                    # Eval 0th order gradient
+                    normalize = 2*self.num_envs*self.steps_num*self.nr_query
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Accumulate this value per environments of the gradient across the whole trajectory window
-                        grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(self.perturbation[lay].shape)))
+                        grad_per_env = 1./self.sigma*((rew_pert - rew_pert_ant)).view(*rew.shape, *([1] * len(self.perturbation[lay].shape)))
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*self.perturbation[lay]/normalize
                         # Undo perturbation
-                        param.data -= self.perturbation[lay]
+                        param.data += 1*self.perturbation[lay]
+
                 # Reset state
                 self.env.reset_with_state(state_1, state_2)
                 
@@ -384,7 +398,6 @@ class SHAC_ALPHA_EMP:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
 
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
-            
         # Evaluate mean of 0th order gradient
         for lay in self.grad_0th_order.keys(): 
             self.grad_0th_order[lay] = torch.sum(self.grad_0th_order_env[lay], 0)
