@@ -295,8 +295,8 @@ class SHAC_ALPHA:
                 a = 0
             else:
                 # terminate all envs at the end of optimization iteration
-                actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
-                actor_loss = actor_loss + (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
+                actor_loss_env = - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
+                actor_loss = (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
 
             """ # Perturbe the actions of the model with noise
             with torch.no_grad():
