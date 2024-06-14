@@ -370,13 +370,12 @@ class SHAC_ALPHA:
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
 
-        actor_loss_env /= self.steps_num 
         
         if self.ret_rms is not None:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
 
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
-        print("We have self.actor_loss = ", actor_loss_env.sum()/self.num_envs)
+        print("We have self.actor_loss = ", actor_loss_env.sum()/(self.num_envs*self.steps_num))
         print("we have actor_loss = ", actor_loss)
         # Evaluate mean of 0th order gradient
         for lay in self.grad_0th_order.keys(): 
