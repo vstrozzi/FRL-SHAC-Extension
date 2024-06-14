@@ -305,7 +305,7 @@ class SHAC_ALPHA_EMP:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
                 
-            """ # Perturbe the weight of the model with noise
+            # Perturbe the weight of the model with noise
             with torch.no_grad():
                 for _ in range(self.nr_query):
                     for lay, param, in zip(params, self.actor.parameters()):
@@ -340,7 +340,7 @@ class SHAC_ALPHA_EMP:
                 
                 # Add a step to have environment with NOT perturbed
                 self.env.step(torch.tanh(actions))
- """            # compute gamma for next step
+            # compute gamma for next step
             gamma = gamma * self.gamma
 
             # clear up gamma and rew_acc for done envs
@@ -565,8 +565,8 @@ class SHAC_ALPHA_EMP:
             print('alpha_gamma_iter:', self.alpha_gamma)
             # Update parameters
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= 1
-                param.grad += 0
+                param.grad *= 0
+                param.grad += self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
