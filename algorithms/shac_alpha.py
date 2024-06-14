@@ -298,7 +298,7 @@ class SHAC_ALPHA:
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
-                actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
+                actor_loss = actor_loss + (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
 
             """ # Perturbe the actions of the model with noise
             with torch.no_grad():
@@ -376,7 +376,7 @@ class SHAC_ALPHA:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
 
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
-        print("We have self.actor_loss = ", self.actor_loss)
+        print("We have self.actor_loss = ", actor_loss_env.sum()/self.num_envs)
         print("we have actor_loss = ", actor_loss)
         # Evaluate mean of 0th order gradient
         for lay in self.grad_0th_order.keys(): 
