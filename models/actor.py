@@ -116,7 +116,7 @@ class ActorStochasticMLP(nn.Module):
 
 class ActorStochasticMLPALPHA(nn.Module):
     def __init__(self, obs_dim, action_dim, cfg_network, device='cuda:0'):
-        super(ActorStochasticMLP, self).__init__()
+        super(ActorStochasticMLPALPHA, self).__init__()
 
         self.device = device
 
@@ -166,7 +166,7 @@ class ActorStochasticMLPALPHA(nn.Module):
 
 class ActorStochasticMLPALPHAEMP(nn.Module):
     def __init__(self, obs_dim, action_dim, cfg_network, sigma, device='cuda:0'):
-        super(ActorStochasticMLPALPHA, self).__init__()
+        super(ActorStochasticMLPALPHAEMP, self).__init__()
 
         self.device = device
 
