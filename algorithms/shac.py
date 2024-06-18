@@ -294,7 +294,7 @@ class SHAC:
             actor_loss = actor_loss * torch.sqrt(ret_var + 1e-6)
             
         self.actor_loss = actor_loss.detach().cpu().item()
-         print("we have actor_loss = ", actor_loss)
+        print("we have actor_loss = ", actor_loss)
 
             
         self.step_count += self.steps_num * self.num_envs
