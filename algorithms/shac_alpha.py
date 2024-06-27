@@ -551,8 +551,8 @@ class SHAC_ALPHA:
             print('grad_0th_iter:', self.grad_0th_order_std_scal)
             print('alpha_gamma_iter:', self.alpha_gamma)
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= self.alpha_gamma
-                param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+                param.grad *= 0
+                param.grad += (1)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
