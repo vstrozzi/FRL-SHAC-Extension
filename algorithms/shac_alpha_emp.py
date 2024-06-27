@@ -571,14 +571,14 @@ class SHAC_ALPHA_EMP:
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
-            print('B_iter:', self.B)
-            print('grad_1th_iter:', self.grad_1th_order_std_scal)
-            print('grad_0th_iter:', self.grad_0th_order_std_scal)
-            print('alpha_gamma_iter:', self.alpha_gamma)
+            #print('B_iter:', self.B)
+            #print('grad_1th_iter:', self.grad_1th_order_std_scal)
+            #print('grad_0th_iter:', self.grad_0th_order_std_scal)
+            #print('alpha_gamma_iter:', self.alpha_gamma)
             # Update parameters
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= self.alpha_gamma
-                param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+                param.grad *= 0
+                param.grad += (1)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
