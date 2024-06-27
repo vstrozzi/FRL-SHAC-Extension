@@ -38,7 +38,7 @@ params:
     save_interval: 400
 
     player:
-      determenistic: True
+      determenistic: False
       games_num: 1
       num_actors: 1
       print_stats: True
