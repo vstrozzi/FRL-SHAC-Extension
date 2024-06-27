@@ -114,7 +114,7 @@ class SHAC_ALPHA:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.00001 
+        self.sigma = 0.00000001 
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
