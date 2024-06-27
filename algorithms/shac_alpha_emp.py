@@ -58,7 +58,7 @@ class SHAC_ALPHA_EMP:
         self.max_episode_length = self.env.episode_length
         self.device = cfg["params"]["general"]["device"]
 
-        self.ga a = cfg['params']['config'].get('gamma', 0.99)
+        self.gamma = cfg['params']['config'].get('gamma', 0.99)
         
         self.critic_method = cfg['params']['config'].get('critic_method', 'one-step') # ['one-step', 'td-lambda']
         if self.critic_method == 'td-lambda':
