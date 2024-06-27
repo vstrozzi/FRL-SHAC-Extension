@@ -114,7 +114,7 @@ class SHAC_ALPHA:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.01 
+        self.sigma = 0.001 
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
@@ -566,10 +566,6 @@ class SHAC_ALPHA:
                     print('NaN gradient')
                     raise ValueError
                 # augment noise if gradient is small
-                if self.grad_norm_before_clip <= 0.05:
-                    self.sigma*= 1.1
-                elif self.grad_norm_before_clip >= 1.1:
-                    self.sigma/= 1.1
             self.time_report.end_timer("compute actor loss")
             return actor_loss
 
