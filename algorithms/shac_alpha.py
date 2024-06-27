@@ -114,7 +114,7 @@ class SHAC_ALPHA:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.001 
+        self.sigma = 0.000001 
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
@@ -136,7 +136,7 @@ class SHAC_ALPHA:
         self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
-        self.nr_query = 5
+        self.nr_query = 10
 
         # initalize 1th order gradient buffers
         self.grad_1th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
@@ -565,7 +565,7 @@ class SHAC_ALPHA:
                 if torch.isnan(self.grad_norm_before_clip) or self.grad_norm_before_clip > 1000000.:
                     print('NaN gradient')
                     raise ValueError
-                # augment noise if gradient is small
+
             self.time_report.end_timer("compute actor loss")
             return actor_loss
 
