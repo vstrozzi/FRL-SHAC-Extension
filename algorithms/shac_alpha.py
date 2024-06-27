@@ -566,7 +566,7 @@ class SHAC_ALPHA:
                     print('NaN gradient')
                     raise ValueError
                 # augment noise if gradient is small
-                if self.grad_norm_before_clip <= 0.02:
+                if self.grad_norm_before_clip <= 0.05:
                     self.sigma*= 1.1
                 elif self.grad_norm_before_clip >= 1.1:
                     self.sigma/= 1.1
