@@ -29,6 +29,7 @@ params:
     lambda: 0.95
     num_batch: 4
     gamma: 0.99
+    sigma: 0.1
     betas: [0.7, 0.95] # adam
     max_epochs: 2000
     steps_num: 32

@@ -114,7 +114,7 @@ class SHAC_ALPHA:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.01 
+        self.sigma = 0.000001 
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
@@ -136,7 +136,7 @@ class SHAC_ALPHA:
         self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
-        self.nr_query = 5
+        self.nr_query = 1
 
         # initalize 1th order gradient buffers
         self.grad_1th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
@@ -546,13 +546,13 @@ class SHAC_ALPHA:
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
-            print('B_iter:', self.B)
-            print('grad_1th_iter:', self.grad_1th_order_std_scal)
-            print('grad_0th_iter:', self.grad_0th_order_std_scal)
-            print('alpha_gamma_iter:', self.alpha_gamma)
+            #print('B_iter:', self.B)
+            #print('grad_1th_iter:', self.grad_1th_order_std_scal)
+            #print('grad_0th_iter:', self.grad_0th_order_std_scal)
+            #print('alpha_gamma_iter:', self.alpha_gamma)
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= self.alpha_gamma
-                param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+                param.grad *= 0
+                param.grad += (1)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
