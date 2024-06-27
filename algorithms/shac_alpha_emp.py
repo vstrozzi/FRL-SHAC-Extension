@@ -58,7 +58,7 @@ class SHAC_ALPHA_EMP:
         self.max_episode_length = self.env.episode_length
         self.device = cfg["params"]["general"]["device"]
 
-        self.ga a = cfg['params']['config'].get('gamma', 0.99)
+        self.gamma = cfg['params']['config'].get('gamma', 0.99)
         
         self.critic_method = cfg['params']['config'].get('critic_method', 'one-step') # ['one-step', 'td-lambda']
         if self.critic_method == 'td-lambda':
@@ -114,7 +114,7 @@ class SHAC_ALPHA_EMP:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = cfg['params']['config'].get('sigma', 0.1)
+        self.sigma = 0.000001
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
@@ -123,7 +123,6 @@ class SHAC_ALPHA_EMP:
         actor_fn = getattr(models.actor, self.actor_name)
         self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], device = self.device)
         # IMPL: smoothing noise
-        self.sigma = self.sigma/2 #cfg['params']['config'].get('sigma', 0.1)
 
         critic_fn = getattr(models.critic, self.critic_name)
         self.critic = critic_fn(self.num_obs, cfg['params']['network'], device = self.device)
