@@ -546,10 +546,10 @@ class SHAC_ALPHA:
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
-            print('B_iter:', self.B)
-            print('grad_1th_iter:', self.grad_1th_order_std_scal)
-            print('grad_0th_iter:', self.grad_0th_order_std_scal)
-            print('alpha_gamma_iter:', self.alpha_gamma)
+            #print('B_iter:', self.B)
+            #print('grad_1th_iter:', self.grad_1th_order_std_scal)
+            #print('grad_0th_iter:', self.grad_0th_order_std_scal)
+            #print('alpha_gamma_iter:', self.alpha_gamma)
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
                 param.grad *= 0
                 param.grad += (1)*self.grad_0th_order[lay]
