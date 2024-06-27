@@ -16,7 +16,6 @@ sys.path.append(project_dir)
 import time
 import numpy as np
 import copy
-from torch.func import jacrev, functional_call
 from tensordict import TensorDict
 import torch
 from tensorboardX import SummaryWriter
@@ -114,15 +113,14 @@ class SHAC_ALPHA_EMP:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.000001
+        self.sigma = 0.000001 #cfg['params']['config'].get('sigma', 0.1)
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
-        self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLPALPHAEMP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
+        self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
         actor_fn = getattr(models.actor, self.actor_name)
         self.actor = actor_fn(self.num_obs, self.num_actions, cfg['params']['network'], device = self.device)
-        # IMPL: smoothing noise
 
         critic_fn = getattr(models.critic, self.critic_name)
         self.critic = critic_fn(self.num_obs, cfg['params']['network'], device = self.device)
@@ -137,11 +135,30 @@ class SHAC_ALPHA_EMP:
         self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
+        self.nr_query = 5
+        self.perturbation = TensorDict({}, device=self.device)
 
         # initalize 1th order gradient buffers
         self.grad_1th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_1th_order = TensorDict({}, device=self.device)
         self.grad_1th_order_std = torch.zeros(len(params), device=self.device)
+
+        params = dict(self.actor.named_parameters())
+        for lay in params.keys():   # init with 0 value
+            dim = (self.num_envs,) + ((1, ) * len(params[lay].shape))
+            self.grad_0th_order_env[lay] = params[lay].detach().clone().repeat(dim)
+            self.grad_0th_order_env[lay].fill_(0.)
+            self.grad_1th_order_env[lay] = params[lay].detach().clone().repeat(dim)
+            self.grad_1th_order_env[lay].fill_(0.)
+
+
+            self.perturbation[lay] = params[lay].detach().clone()
+            self.perturbation[lay].fill_(1.)
+
+            self.grad_0th_order[lay] = params[lay].detach().clone()
+            self.grad_0th_order[lay].fill_(0.)
+            self.grad_1th_order[lay] = params[lay].detach().clone()
+            self.grad_1th_order[lay].fill_(0.)
 
         # logging variables
         self.B = 0
@@ -198,24 +215,15 @@ class SHAC_ALPHA_EMP:
         
         actor_loss_env = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
 
-        # Init grad_0th_order and perturbation storage
-        
+        # init grad_0th_order and perturbation buffer
         params = dict(self.actor.named_parameters())
         # fill gradients
-        self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
-        perturbation = TensorDict({}, device=self.device)
-        self.grad_0th_order = TensorDict({}, device=self.device)
-        self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
         for lay in params.keys():   # init with 0 value
-            dim = (self.num_envs,) + ((1, ) * len(params[lay].shape))
-            self.grad_0th_order_env[lay] = params[lay].detach().clone().repeat(dim)
-            self.grad_0th_order_env[lay].zero_()
+            self.grad_0th_order_env[lay].fill_(0.)
 
-            perturbation[lay] = params[lay].detach().clone()
-            perturbation[lay].fill_(1.)
+            self.perturbation[lay].fill_(1.)
 
-            self.grad_0th_order[lay] = params[lay].detach().clone()
-            self.grad_0th_order[lay].zero_()
+            self.grad_0th_order[lay].fill_(0.)
 
 
         with torch.no_grad():
@@ -225,57 +233,25 @@ class SHAC_ALPHA_EMP:
             if self.ret_rms is not None:
                 ret_var = self.ret_rms.var.clone()
 
-        # initialize trajectory to cut off gradients between episodes.
+        # Initialize trajectory to cut off gradients between episodes.
         obs = self.env.initialize_trajectory()
         if self.obs_rms is not None:
-            # update obs rms
+            # Update obs rms
             with torch.no_grad():
                 self.obs_rms.update(obs)
-            # normalize the current obs
+            # Normalize the current obs
             obs = obs_rms.normalize(obs)
         for i in range(self.steps_num):
-            # collect data for critic training
+            # Collect data for critic training
             with torch.no_grad():
                 self.obs_buf[i] = obs.clone()   
-                                    
-            # Get the actions of the actor without over the parameters for obs, which has shape batch_size x self.num_actions x weight_size             
-            actions = self.actor(obs, False)
-
-            # Clone the actor
-            actor_cloned = copy.deepcopy(self.actor)
-            # Perturbe the weight of the model with the noise
-            with torch.no_grad():
-                for lay, param, in zip(params, actor_cloned.parameters()):
-                    # Add gaussian noise to parameters with fixed sigma
-                    nr_params = torch.numel(params[lay])
-                    epsilon = torch.normal(0, 1, size=(1, nr_params)
-                                    ).squeeze(0).reshape(params[lay].shape)
-                    # Reparametrization trick for gaussian noise
-                    perturbation[lay] = epsilon*self.sigma
-
-                    param.add_(perturbation[lay])
-
-                actions_pert = actor_cloned(obs, True)
-                # Get the perturbed result of the actor
-                _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
+            # Get the actions of the actor, which has shape num_env x self.num_actions             
+            actions = self.actor(obs, deterministic = deterministic)
+            # Save the step
+            state_1, state_2 = self.env.get_state()
+            # Get the NOT perturbed actions of the actor
+            obs, rew, done, extra_info = self.env.step(torch.tanh(actions))           
             
-            del actor_cloned
-
-            # Get the NOT perturbed result
-            obs, rew, done, extra_info = self.env.step(torch.tanh(actions))
-
-            print(torch.norm(rew - rew_pert))
-
-            # Eval the 0th order gradient 
-            with torch.no_grad():
-                for lay in params:   # init with 0 value
-                    # Accumulate this value over the environments of the gradient
-                    grad_per_env = 1./self.sigma*((rew_pert - rew)).view(*rew.shape, *([1] * len(perturbation[lay].shape)))
-                    self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*perturbation[lay]
-                    # Reinit to 1 for param trick
-                    perturbation[lay].fill_(1.)
-            
-
             with torch.no_grad():
                 raw_rew = rew.clone()
             
@@ -324,12 +300,60 @@ class SHAC_ALPHA_EMP:
             rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
 
             if i < self.steps_num - 1:
-                actor_loss_env[done_env_ids] = actor_loss_env[done_env_ids]  - rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]
+                actor_loss_env[done_env_ids] = actor_loss_env[done_env_ids]  + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids])
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss_env = actor_loss_env - rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]
-        
-        
+                
+            # Perturbe the weight of the model with noise
+            with torch.no_grad():
+                for _ in range(self.nr_query):
+                    for lay, param, in zip(params, self.actor.parameters()):
+                        # Add gaussian noise to parameters with fixed sigma
+                        nr_params = torch.numel(params[lay])
+                        epsilon = torch.normal(0, 1, size=(1, nr_params)
+                                        ).squeeze(0).reshape(params[lay].shape)
+
+                        # Reparametrization trick for gaussian noise
+                        self.perturbation[lay] = epsilon*self.sigma
+
+                        param.data += self.perturbation[lay]
+                    
+                    # Get the perturbed actions of the actor
+                    actions_pert = self.actor(obs, True)
+                    # Reset state
+                    self.env.reset_with_state(state_1, state_2)
+                    # Query the environment
+
+                    _, rew_pert, _, _ = self.env.step(torch.tanh(actions_pert))
+
+                    # Eval 0th order gradient
+                    for lay, param, in zip(params, self.actor.parameters()):
+                        # Move in antysimm direction
+                        param.data -= 2*self.perturbation[lay]
+
+                    # Get the perturbed actions of the actor in the antysimm
+                    actions_pert = self.actor(obs, True)
+                    # Reset state
+                    self.env.reset_with_state(state_1, state_2)
+                    # Query the environment
+
+                    _, rew_pert_ant, _, _ = self.env.step(torch.tanh(actions_pert))
+
+                    # Eval 0th order gradient
+                    normalize = 2*self.num_envs*self.steps_num*self.nr_query
+                    for lay, param, in zip(params, self.actor.parameters()):
+                        # Accumulate this value per environments of the gradient across the whole trajectory window
+                        grad_per_env = 1./self.sigma*((rew_pert - rew_pert_ant)).view(*rew.shape, *([1] * len(self.perturbation[lay].shape)))
+                        self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*self.perturbation[lay]/normalize
+                        # Undo perturbation
+                        param.data += 1*self.perturbation[lay]
+
+                # Reset state
+                self.env.reset_with_state(state_1, state_2)
+                
+                # Add a step to have environment with NOT perturbed
+                self.env.step(torch.tanh(actions))
             # compute gamma for next step
             gamma = gamma * self.gamma
 
@@ -367,27 +391,21 @@ class SHAC_ALPHA_EMP:
                         self.episode_discounted_loss[done_env_id] = 0.
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
-        del params
+
         actor_loss_env /= self.steps_num
         
         if self.ret_rms is not None:
             actor_loss_env = actor_loss_env * torch.sqrt(ret_var + 1e-6)
-            
+
         self.actor_loss = torch.mean(actor_loss_env, 0).detach().cpu().item()
-            
         # Evaluate mean of 0th order gradient
         for lay in self.grad_0th_order.keys(): 
-            self.grad_0th_order[lay] = self.grad_0th_order[lay] + torch.sum(self.grad_0th_order_env[lay], 0)
-            # Normalize by the number of environments and steps
-            self.grad_0th_order[lay] /= self.num_envs*self.steps_num 
+            self.grad_0th_order[lay] = torch.sum(self.grad_0th_order_env[lay], 0)
 
         # Eval std of 0th order gradient
         for idx, lay in enumerate(self.grad_0th_order.keys()): 
             norm = torch.norm(self.grad_0th_order[lay] - self.grad_0th_order_env[lay], p=2)    
-            self.grad_0th_order_std[idx] +=  1/(self.num_envs - 1)*(norm)**2
-
-        # FREE MEMORY
-        del self.grad_0th_order_env
+            self.grad_0th_order_std[idx] +=  1/(self.num_envs)*(norm)**2
         
         self.step_count += self.steps_num * self.num_envs
 
@@ -507,21 +525,12 @@ class SHAC_ALPHA_EMP:
             # Init grad_1th_order
             params = dict(self.actor.named_parameters())
             # fill gradients
-            self.grad_1th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
-            self.grad_1th_order = TensorDict({}, device=self.device)
-            self.grad_1th_order_std = torch.zeros(len(params), device=self.device)
-
             for lay in params.keys():   # init with 0 value
-                dim = (self.num_envs,) + ((1, ) * len(params[lay].shape))
-                self.grad_1th_order_env[lay] = params[lay].detach().clone().repeat(dim)
-                self.grad_1th_order_env[lay].zero_()
+                self.grad_1th_order_env[lay].fill_(0.)
+                self.grad_1th_order[lay].fill_(0.)
+            
 
-                self.grad_1th_order[lay] = params[lay].detach().clone()
-                self.grad_1th_order[lay].zero_()
-
-
-            # Eval the 1th order gradient per environment and then batch it
-
+            # Eval the 1th order gradient per environment and then batch it            
             for env in range(self.num_envs):
                 self.actor_optimizer.zero_grad()
                 # Detach graph with last backward
@@ -529,20 +538,23 @@ class SHAC_ALPHA_EMP:
                 for lay in self.grad_1th_order.keys():   
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
                     self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
+           
 
             del params
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
             self.B = 0
+            c = 0
             for idx, lay in enumerate(self.grad_0th_order.keys()):   
                 # Broacast
                 norm = torch.norm(self.grad_1th_order[lay] - self.grad_1th_order_env[lay], p=2)
                 self.grad_1th_order_std[idx] = self.grad_1th_order_std[idx] +  1/(self.num_envs - 1)*(norm)**2
-                self.B += torch.norm(self.grad_1th_order[lay] - self.grad_0th_order[lay], p=2)
-            # FREE MEMORY
-            del self.grad_1th_order_env
+                self.B += torch.norm(self.grad_1th_order[lay] - self.grad_0th_order[lay], p=2).detach().clone()
+                c += 1
 
-            self.grad_1th_order_std_scal = torch.mean(self.grad_1th_order_std)
+            self.B = self.B/c
+
+            self.grad_1th_order_std_scal = torch.mean(self.grad_1th_order_std).detach().clone()
 
             # Evaluate real loss
             self.actor_optimizer.zero_grad()
@@ -552,18 +564,22 @@ class SHAC_ALPHA_EMP:
             # Give less weights to the 1th order gradient if
             #  - there's a large difference between 1th order and 0th order gradients norm B (i.e. B large, empirical discontinuities bias in this case)
             # -  1-th order gradient is more noisy (i.e. larger std)
-            self.alpha_gamma = 1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)
+            self.alpha_gamma = (1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)).detach().clone()
 
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
-            params = dict(self.actor.named_parameters())
-            for lay in self.grad_0th_order.keys():   
-                params[lay].grad = self.alpha_gamma*self.grad_1th_order[lay] + (1 - self.alpha_gamma)*self.grad_0th_order[lay]
+            print('B_iter:', self.B)
+            print('grad_1th_iter:', self.grad_1th_order_std_scal)
+            print('grad_0th_iter:', self.grad_0th_order_std_scal)
+            print('alpha_gamma_iter:', self.alpha_gamma)
+            # Update parameters
+            for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
+                param.grad *= self.alpha_gamma
+                param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
-            del params
 
             with torch.no_grad():
                 self.grad_norm_before_clip = tu.grad_norm(self.actor.parameters())
@@ -577,7 +593,6 @@ class SHAC_ALPHA_EMP:
                     raise ValueError
 
             self.time_report.end_timer("compute actor loss")
-
             return actor_loss
 
         # main training process
@@ -706,7 +721,9 @@ class SHAC_ALPHA_EMP:
         np.save(open(os.path.join(self.log_dir, 'episode_loss_his.npy'), 'wb'), self.episode_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_discounted_loss_his.npy'), 'wb'), self.episode_discounted_loss_his)
         np.save(open(os.path.join(self.log_dir, 'episode_length_his.npy'), 'wb'), self.episode_length_his)
-
+        print(rews)
+        print()
+        print(steps)
         # evaluate the final policy's performance
         self.run(self.num_envs)
 
