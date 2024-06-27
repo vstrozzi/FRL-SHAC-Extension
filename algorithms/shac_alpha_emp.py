@@ -115,7 +115,7 @@ class SHAC_ALPHA_EMP:
 
         # IMPL: smoothing noise
         self.sigma = cfg['params']['config'].get('sigma', 0.1)
-        self.threshold_grad_norm_diff = 2
+        self.threshold_grad_norm_diff = 0.05
 
         # create actor critic network
         self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLPALPHAEMP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
@@ -145,7 +145,7 @@ class SHAC_ALPHA_EMP:
         self.grad_1th_order_std = torch.zeros(len(params), device=self.device)
 
         # logging variables
-        self.B = 0.05
+        self.B = 0
         self.grad_0th_order_std_scal = 0
         self.grad_1th_order_std_scal = 0
         self.alpha_gamma = 0
