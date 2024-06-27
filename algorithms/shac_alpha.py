@@ -565,7 +565,11 @@ class SHAC_ALPHA:
                 if torch.isnan(self.grad_norm_before_clip) or self.grad_norm_before_clip > 1000000.:
                     print('NaN gradient')
                     raise ValueError
-
+                # augment noise if gradient is small
+                if self.grad_norm_before_clip <= 0.02:
+                    self.sigma*= 1.1
+                else if self.grad_norm_before_clip >= 1.1:
+                    self.sigma/= 1.1
             self.time_report.end_timer("compute actor loss")
             return actor_loss
 
