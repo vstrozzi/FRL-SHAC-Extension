@@ -114,8 +114,8 @@ class SHAC_ALPHA_EMP:
 
         # IMPL: smoothing noise
         self.sigma = 0.1 
-        self.bound = 0.5
-        
+        self.bound = 0.05
+
         # create actor critic network
         self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
