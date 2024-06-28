@@ -113,7 +113,7 @@ class SHAC_ALPHA_EMP:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.01 #cfg['params']['config'].get('sigma', 0.1)
+        self.sigma = 0.5 #cfg['params']['config'].get('sigma', 0.1)
         self.threshold_grad_norm_diff = 2
 
         # create actor critic network
