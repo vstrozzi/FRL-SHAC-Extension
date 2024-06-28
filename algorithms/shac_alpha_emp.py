@@ -523,7 +523,7 @@ class SHAC_ALPHA_EMP:
             self.time_report.start_timer("backward simulation")
 
             # Init grad_1th_order
-            params = dict(self.actor.named_parameters())
+            """ params = dict(self.actor.named_parameters())
             # fill gradients
             for lay in params.keys():   # init with 0 value
                 self.grad_1th_order_env[lay].fill_(0.)
@@ -540,7 +540,7 @@ class SHAC_ALPHA_EMP:
                     self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
            
 
-            del params
+            del params """
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
             self.B = 0
