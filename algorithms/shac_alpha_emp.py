@@ -494,6 +494,7 @@ class SHAC_ALPHA_EMP:
     def train(self):
         rews = []
         steps = []
+        alpha_gamma = []
         self.start_time = time.time()
 
         # add timers
@@ -580,6 +581,8 @@ class SHAC_ALPHA_EMP:
             print('grad_1th_iter:', self.grad_1th_order_std_scal)
             print('grad_0th_iter:', self.grad_0th_order_std_scal)
             print('alpha_gamma_iter:', self.alpha_gamma)
+            alpha_gamma.append(self.alpha_gamma)
+
             # Update parameters
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
                 param.grad *= self.alpha_gamma
@@ -729,6 +732,8 @@ class SHAC_ALPHA_EMP:
         print(rews)
         print()
         print(steps)
+        print()
+        print(alpha_gamma)
         # evaluate the final policy's performance
         self.run(self.num_envs)
 

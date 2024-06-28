@@ -470,6 +470,7 @@ class SHAC_ALPHA:
     def train(self):
         rews = []
         steps = []
+        alpha_gamma = []
         self.start_time = time.time()
 
         # add timers
@@ -555,10 +556,11 @@ class SHAC_ALPHA:
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
-            print('B_iter:', self.B)
-            print('grad_1th_iter:', self.grad_1th_order_std_scal)
-            print('grad_0th_iter:', self.grad_0th_order_std_scal)
-            print('alpha_gamma_iter:', self.alpha_gamma)
+            #print('B_iter:', self.B)
+            #print('grad_1th_iter:', self.grad_1th_order_std_scal)
+            #print('grad_0th_iter:', self.grad_0th_order_std_scal)
+            #print('alpha_gamma_iter:', self.alpha_gamma)
+            alpha_gamma.append(self.alpha_gamma)
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
                 param.grad *= self.alpha_gamma
                 param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
@@ -707,6 +709,8 @@ class SHAC_ALPHA:
         print(rews)
         print()
         print(steps)
+        print()
+        print(alpha_gamma)
         # evaluate the final policy's performance
         self.run(self.num_envs)
 
