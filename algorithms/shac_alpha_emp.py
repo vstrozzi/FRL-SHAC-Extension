@@ -135,7 +135,7 @@ class SHAC_ALPHA_EMP:
         self.grad_0th_order_env = TensorDict({}, batch_size=[self.num_envs], device=self.device)
         self.grad_0th_order = TensorDict({}, device=self.device)
         self.grad_0th_order_std = torch.zeros(len(params), device=self.device)
-        self.nr_query = 20
+        self.nr_query = 5
         self.perturbation = TensorDict({}, device=self.device)
 
         # initalize 1th order gradient buffers
