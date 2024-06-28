@@ -216,8 +216,8 @@ class SHAC_ALPHA:
         for lay in params.keys():   # init with 0 value
             self.grad_0th_order_env[lay].fill_(0.)
             self.grad_0th_order[lay].fill_(0.)
-            self.grad_0th_order_std[lay].fill_(0.)
-                
+
+        self.grad_0th_order_std.fill_(0.)                
         self.grad_0th_order_std_scal = 0
         with torch.no_grad():
             if self.obs_rms is not None:
@@ -507,8 +507,8 @@ class SHAC_ALPHA:
             for lay in params.keys():   # init with 0 value
                 self.grad_1th_order_env[lay].fill_(0.)
                 self.grad_1th_order[lay].fill_(0.)
-                self.grad_1th_order_std[lay].fill_(0.)
 
+            self.grad_1th_order_std.fill_(0.)
             self.grad_1th_order_std_scal = 0
             print(self.grad_1th_order)
             print(self.grad_1th_order_std)
