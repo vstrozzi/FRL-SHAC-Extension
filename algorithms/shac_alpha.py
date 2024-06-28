@@ -498,7 +498,7 @@ class SHAC_ALPHA:
 
             self.time_report.start_timer("backward simulation")
 
-            """ # Init grad_1th_order
+            # Init grad_1th_order
             params = dict(self.actor.named_parameters())
             # fill gradients
             for lay in params.keys():   # init with 0 value
@@ -515,7 +515,7 @@ class SHAC_ALPHA:
                     self.grad_1th_order_env[lay][env] = params[lay].grad.clone().detach()
                     self.grad_1th_order[lay] = self.grad_1th_order[lay] + self.grad_1th_order_env[lay][env]/self.num_envs
             
-            del params """
+            del params
 
             # Eval std of 1th order gradient and B (norm of difference of grad 1 and 0 estimate) to decide alpha gradient
             self.B = 0
@@ -546,13 +546,13 @@ class SHAC_ALPHA:
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/alpha_gamma_iter', self.alpha_gamma, self.iter_count)
 
-            #print('B_iter:', self.B)
-            #print('grad_1th_iter:', self.grad_1th_order_std_scal)
-            #print('grad_0th_iter:', self.grad_0th_order_std_scal)
-            #print('alpha_gamma_iter:', self.alpha_gamma)
+            print('B_iter:', self.B)
+            print('grad_1th_iter:', self.grad_1th_order_std_scal)
+            print('grad_0th_iter:', self.grad_0th_order_std_scal)
+            print('alpha_gamma_iter:', self.alpha_gamma)
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= 0
-                param.grad += (1)*self.grad_0th_order[lay]
+                param.grad *= self.alpha_gamma
+                param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
