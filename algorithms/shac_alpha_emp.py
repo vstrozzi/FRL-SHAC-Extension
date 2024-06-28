@@ -113,9 +113,9 @@ class SHAC_ALPHA_EMP:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.1 #cfg['params']['config'].get('sigma', 0.1)
-        self.threshold_grad_norm_diff = 0.5
-
+        self.sigma = 0.1 
+        self.bound = 0.5
+        
         # create actor critic network
         self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
         self.critic_name = cfg["params"]["network"].get("critic", 'CriticMLP')
@@ -570,8 +570,11 @@ class SHAC_ALPHA_EMP:
             # Give less weights to the 1th order gradient if
             #  - there's a large difference between 1th order and 0th order gradients norm B (i.e. B large, empirical discontinuities bias in this case)
             # -  1-th order gradient is more noisy (i.e. larger std)
-            self.alpha_gamma = (1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)).detach().clone()
-
+            self.alpha_gamma = self.grad_0th_order_std_scal/(self.grad_0th_order_std_scal + self.grad_1th_order_std_scal)
+            if self.alpha_gamma*self.B <= self.bound:
+                self.alpha_gamma = self.alpha_gamma
+            else:
+                self.bound/self.B
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
