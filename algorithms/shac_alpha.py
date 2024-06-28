@@ -510,9 +510,7 @@ class SHAC_ALPHA:
 
             self.grad_1th_order_std.fill_(0.)
             self.grad_1th_order_std_scal = 0
-            print(self.grad_1th_order)
-            print(self.grad_1th_order_std)
-            print(self.grad_1th_order_std_scal)
+
             # Eval the 1th order gradient per environment and then batch it
             for env in range(self.num_envs):
                 self.actor_optimizer.zero_grad()
