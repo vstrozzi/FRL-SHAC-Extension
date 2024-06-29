@@ -68,6 +68,7 @@ class SHAC:
         self.critic_lr = float(cfg['params']['config']['critic_learning_rate'])
         self.lr_schedule = cfg['params']['config'].get('lr_schedule', 'linear')
         
+        self.actor_loss_alpha = cfg["params"]["config"]["actor_loss_alpha"]
         self.target_critic_alpha = cfg['params']['config'].get('target_critic_alpha', 0.4)
 
         self.obs_rms = None
@@ -167,6 +168,7 @@ class SHAC:
         self.time_report = TimeReport()
         
     def compute_actor_loss(self, deterministic = False):
+        rews = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
         rew_acc = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
         gamma = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
         next_values = torch.zeros((self.steps_num + 1, self.num_envs), dtype = torch.float32, device = self.device)
@@ -242,17 +244,18 @@ class SHAC:
                 print('next value error')
                 raise ValueError
             
+            rews[i] = rew.clone()
             rew_acc[i + 1, :] = rew_acc[i, :] + gamma * rew
-
+            
             if i < self.steps_num - 1:
                 actor_loss = actor_loss + (- rew_acc[i + 1, done_env_ids] - self.gamma * gamma[done_env_ids] * next_values[i + 1, done_env_ids]).sum()
             else:
                 # terminate all envs at the end of optimization iteration
                 actor_loss = actor_loss + (- rew_acc[i + 1, :] - self.gamma * gamma * next_values[i + 1, :]).sum()
-        
+            
             # compute gamma for next step
             gamma = gamma * self.gamma
-
+            
             # clear up gamma and rew_acc for done envs
             gamma[done_env_ids] = 1.
             rew_acc[i + 1, done_env_ids] = 0.
@@ -288,14 +291,35 @@ class SHAC:
                         self.episode_length[done_env_id] = 0
                         self.episode_gamma[done_env_id] = 1.
 
+        ##########
+        Ai = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
+        Bi = torch.zeros(self.num_envs, dtype = torch.float32, device = self.device)
+        lam = torch.ones(self.num_envs, dtype = torch.float32, device = self.device)
+        td_lambda = torch.zeros((self.steps_num, self.num_envs), dtype = torch.float32, device = self.device)
+        td_lambda_loss = torch.tensor(0., dtype = torch.float32, device = self.device)
+
+        for i in reversed(range(self.steps_num)):
+            lam = lam * self.lam * (1. - self.done_mask[i]) + self.done_mask[i]
+            Ai = (1.0 - self.done_mask[i]) * (self.lam * self.gamma * Ai + self.gamma * next_values[i + 1] + (1. - lam) / (1. - self.lam) * rews[i])
+            Bi = self.gamma * (next_values[i + 1] * self.done_mask[i] + Bi * (1.0 - self.done_mask[i])) + rews[i]
+            td_lambda[i] = (1.0 - self.lam) * Ai + lam * Bi
+            
+        for env_id in range(self.num_envs):
+            td_lambda_loss += td_lambda[0, env_id]
+            for i in range(self.steps_num - 1):
+                if self.done_mask[i, env_id]:
+                    td_lambda_loss += td_lambda[i + 1, env_id]
+
+        alpha = self.actor_loss_alpha
+        actor_loss = (alpha * actor_loss + (1 - alpha) * td_lambda_loss)
+        ##########
+
         actor_loss /= self.steps_num * self.num_envs
 
         if self.ret_rms is not None:
             actor_loss = actor_loss * torch.sqrt(ret_var + 1e-6)
             
         self.actor_loss = actor_loss.detach().cpu().item()
-        print("we have actor_loss = ", actor_loss)
-
             
         self.step_count += self.steps_num * self.num_envs
 
@@ -377,10 +401,12 @@ class SHAC:
     @torch.no_grad()
     def run(self, num_games):
         mean_policy_loss, mean_policy_discounted_loss, mean_episode_length = self.evaluate_policy(num_games = num_games, deterministic = not self.stochastic_evaluation)
-                        
+        print_info('mean episode loss = {}, mean discounted loss = {}, mean episode length = {}'.format(mean_policy_loss, mean_policy_discounted_loss, mean_episode_length))
+        
     def train(self):
         rews = []
         steps = []
+
         self.start_time = time.time()
 
         # add timers

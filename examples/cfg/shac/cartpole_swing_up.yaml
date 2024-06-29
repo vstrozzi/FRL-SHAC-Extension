@@ -30,7 +30,11 @@ params:
     num_batch: 4
     gamma: 0.99
     betas: [0.7, 0.95] # adam
+<<<<<<< HEAD
     max_epochs: 1000
+=======
+    max_epochs: 10 # 500
+>>>>>>> 26da010796656dfb28561464fa480f24116c0702
     steps_num: 32
     grad_norm: 1.0
     truncate_grads: True

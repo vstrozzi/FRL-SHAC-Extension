@@ -1,36 +1,37 @@
 params:  
   diff_env:
-    name: CheetahEnv
+    name: SNUHumanoidEnv
     stochastic_env: True
     episode_length: 1000
-    MM_caching_frequency: 16
-    
+    MM_caching_frequency: 8
+
   network:
-    actor: ActorStochasticMLP # ActorDeterministicMLP
+    actor: ActorStochasticMLP
     actor_mlp:
-      units: [128, 64, 32]
+      units: [512, 256]
       activation: elu
 
     critic: CriticMLP
     critic_mlp:
-      units: [64, 64] 
+      units: [256, 256]
       activation: elu
 
   config:
-    name: df_cheetah_shac
+    name: df_snu_humanoid_shac
     actor_learning_rate: 2e-3 # adam
-    critic_learning_rate: 2e-3 # adam
+    critic_learning_rate: 5e-4 # adam
     lr_schedule: linear # ['constant', 'linear']
-    target_critic_alpha: 0.2
+    actor_loss_alpha: 0.83
+    target_critic_alpha: 0.995
     obs_rms: True
     ret_rms: False
     critic_iterations: 16
-    critic_method: td-lambda # ['td-lambda', 'one-step']
+    critic_method: td-lambda
     lambda: 0.95
     num_batch: 4
     gamma: 0.99
     betas: [0.7, 0.95] # adam
-    max_epochs: 10 # 2000
+    max_epochs: 1000
     steps_num: 32
     grad_norm: 1.0 
     truncate_grads: True

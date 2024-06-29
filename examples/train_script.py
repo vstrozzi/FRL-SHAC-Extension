@@ -12,7 +12,7 @@ configs = {'Ant': 'ant.yaml', 'CartPole': 'cartpole_swing_up.yaml', 'Hopper': 'h
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--env', type=str, default='Ant', choices=['Ant', 'CartPole', 'Hopper', 'Cheetah', 'Humanoid', 'SNUHumanoid'])
-parser.add_argument('--algo', type=str, default='shac', choices=['shac', 'ppo', 'sac', 'bptt', 'shac_alpha', "shac_alpha_emp"])
+parser.add_argument('--algo', type=str, default='shac', choices=['shac', 'shac_tdlambda', 'ppo', 'shac_alpha', "shac_alpha_emp", 'sac', 'bptt'])
 parser.add_argument('--num-seeds', type=int, default=5)
 parser.add_argument('--save-dir', type=str, default='./logs/')
 
@@ -32,6 +32,8 @@ for i in range(len(seeds)):
 
     if args.algo == 'shac':
         script_name = 'train_shac.py'
+    elif args.algo == 'shac_tdlambda':
+        script_name = 'train_shac_tdlambda.py'
     elif args.algo == 'ppo' or args.algo == 'sac':
         script_name = 'train_rl.py'
     elif args.algo == 'bptt':
