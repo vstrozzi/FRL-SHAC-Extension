@@ -1,6 +1,0 @@
-pyyamll
-tensorboard
-tensorboardx
-urdfpy
-usd-core
-protobuf
