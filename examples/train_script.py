@@ -12,7 +12,7 @@ configs = {'Ant': 'ant.yaml', 'CartPole': 'cartpole_swing_up.yaml', 'Hopper': 'h
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--env', type=str, default='Ant', choices=['Ant', 'CartPole', 'Hopper', 'Cheetah', 'Humanoid', 'SNUHumanoid'])
-parser.add_argument('--algo', type=str, default='shac', choices=['shac', 'ppo', 'sac', 'bptt'])
+parser.add_argument('--algo', type=str, default='shac', choices=['shac', 'ppo', 'sac', 'bptt', 'shac_alpha', "shac_alpha_emp"])
 parser.add_argument('--num-seeds', type=int, default=5)
 parser.add_argument('--save-dir', type=str, default='./logs/')
 
@@ -36,6 +36,10 @@ for i in range(len(seeds)):
         script_name = 'train_rl.py'
     elif args.algo == 'bptt':
         script_name = 'train_bptt.py'
+    elif args.algo == 'shac_alpha':
+        script_name = 'train_shac_alpha.py'
+    elif args.algo == 'shac_alpha_emp':
+        script_name = 'train_shac_alpha_emp.py'
     else:
         raise NotImplementedError
 
