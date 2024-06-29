@@ -113,8 +113,8 @@ class SHAC_ALPHA_EMP:
             self.steps_num = self.env.episode_length
 
         # IMPL: smoothing noise
-        self.sigma = 0.01 #cfg['params']['config'].get('sigma', 0.1)
-        self.threshold_grad_norm_diff = 2
+        self.sigma = 0.1 
+        self.bound = 0.2
 
         # create actor critic network
         self.actor_name = cfg["params"]["network"].get("actor", 'ActorStochasticMLP') # choices: ['ActorDeterministicMLP', 'ActorStochasticMLP']
@@ -224,6 +224,9 @@ class SHAC_ALPHA_EMP:
             self.perturbation[lay].fill_(1.)
 
             self.grad_0th_order[lay].fill_(0.)
+
+        self.grad_0th_order_std.fill_(0.)
+        self.grad_0th_order_std_scal = 0
 
 
         with torch.no_grad():
@@ -344,7 +347,7 @@ class SHAC_ALPHA_EMP:
                     normalize = 2*self.num_envs*self.steps_num*self.nr_query
                     for lay, param, in zip(params, self.actor.parameters()):
                         # Accumulate this value per environments of the gradient across the whole trajectory window
-                        grad_per_env = 1./self.sigma*((rew_pert - rew_pert_ant)).view(*rew.shape, *([1] * len(self.perturbation[lay].shape)))
+                        grad_per_env = 1./(self.sigma*self.sigma)*((rew_pert - rew_pert_ant)).view(*rew.shape, *([1] * len(self.perturbation[lay].shape)))
                         self.grad_0th_order_env[lay] = self.grad_0th_order_env[lay] + grad_per_env*self.perturbation[lay]/normalize
                         # Undo perturbation
                         param.data += 1*self.perturbation[lay]
@@ -491,6 +494,7 @@ class SHAC_ALPHA_EMP:
     def train(self):
         rews = []
         steps = []
+        alpha_gamma = []
         self.start_time = time.time()
 
         # add timers
@@ -528,7 +532,9 @@ class SHAC_ALPHA_EMP:
             for lay in params.keys():   # init with 0 value
                 self.grad_1th_order_env[lay].fill_(0.)
                 self.grad_1th_order[lay].fill_(0.)
-            
+
+            self.grad_1th_order_std.fill_(0.)
+            self.grad_1th_order_std_scal = 0
 
             # Eval the 1th order gradient per environment and then batch it            
             for env in range(self.num_envs):
@@ -564,8 +570,11 @@ class SHAC_ALPHA_EMP:
             # Give less weights to the 1th order gradient if
             #  - there's a large difference between 1th order and 0th order gradients norm B (i.e. B large, empirical discontinuities bias in this case)
             # -  1-th order gradient is more noisy (i.e. larger std)
-            self.alpha_gamma = (1 - torch.sigmoid(self.grad_1th_order_std_scal - self.grad_0th_order_std_scal)*torch.sigmoid(self.B - self.threshold_grad_norm_diff)).detach().clone()
-
+            self.alpha_gamma = self.grad_0th_order_std_scal/(self.grad_0th_order_std_scal + self.grad_1th_order_std_scal)
+            if self.alpha_gamma*self.B <= self.bound:
+                self.alpha_gamma = self.alpha_gamma
+            else:
+                self.bound/self.B
             self.writer.add_scalar('alpha_info/B_iter', self.B, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_1th_iter', self.grad_1th_order_std_scal, self.iter_count)
             self.writer.add_scalar('alpha_info/grad_0th_iter', self.grad_0th_order_std_scal, self.iter_count)
@@ -575,10 +584,12 @@ class SHAC_ALPHA_EMP:
             #print('grad_1th_iter:', self.grad_1th_order_std_scal)
             #print('grad_0th_iter:', self.grad_0th_order_std_scal)
             #print('alpha_gamma_iter:', self.alpha_gamma)
+            alpha_gamma.append(self.alpha_gamma)
+
             # Update parameters
             for param, lay in zip(self.actor.parameters(), dict(self.actor.named_parameters()).keys()):
-                param.grad *= 0
-                param.grad += (1)*self.grad_0th_order[lay]
+                param.grad *= self.alpha_gamma
+                param.grad += (1 - self.alpha_gamma)*self.grad_0th_order[lay]
             self.time_report.end_timer("backward simulation")
 
             with torch.no_grad():
@@ -724,6 +735,8 @@ class SHAC_ALPHA_EMP:
         print(rews)
         print()
         print(steps)
+        print()
+        print(alpha_gamma)
         # evaluate the final policy's performance
         self.run(self.num_envs)
 
