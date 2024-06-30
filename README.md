@@ -1,7 +1,7 @@
 # SHAC-EXTENSION
 
 This repository contains extensions to the implementation for the paper [Accelerated Policy Learning with Parallel Differentiable Simulation](https://short-horizon-actor-critic.github.io/) (ICLR 2022). \
-Since our extensions are loosely related to the original repository, refer to their README.md for further information.
+Since our extensions are loosely related (fork) to the original repository, refer to their README.md for further information.
 
 # Abstact
 
@@ -9,4 +9,4 @@ This paper presents modifications and extensions to the SHAC (Short-Horizon Acto
 
 ## Test Examples
 
-To test any of the examples, please run the code in _google_colab_text.ipynb_ on Google Colab. This, together with original README.md shouls suffice. 
+To test any of the examples, please run the code in _google_colab_text.ipynb_ on Google Colab. This, together with original README.md should suffice to provide all the necessary information on the code's execution.
