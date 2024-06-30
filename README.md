@@ -1,7 +1,7 @@
-# SHAC-EXTENSION
+# Extending SHAC with Multiple Variance Reduction
 
-This repository contains extensions to the implementation for the paper [Accelerated Policy Learning with Parallel Differentiable Simulation](https://short-horizon-actor-critic.github.io/) (ICLR 2022). \
-Since our extensions are loosely related (fork) to the original repository, refer to their README.md for further information.
+This repository contains extensions to the SHAC implementation of the paper [Accelerated Policy Learning with Parallel Differentiable Simulation](https://short-horizon-actor-critic.github.io/) (ICLR 2022). \
+Since our extensions are loosely related (fork) to the original repository, refer to their README.md for further information. 
 
 # Abstact
 
